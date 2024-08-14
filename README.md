@@ -17,7 +17,7 @@ PostgreSQL Extention for buffer cache manipulation
 8. [Benchmark](#benchmark)
 9. [License](#license)
 
-## Installation  
+## Install  
 > git clone https://github.com/04ina/buffercache_tools.git   
 > cd buffercache_tools
 ### make
@@ -30,7 +30,7 @@ PostgreSQL Extention for buffer cache manipulation
 > ninja install  
 ### Setup in postgres
 > CREATE EXTENSION buffercache_tools;
-## Functions
+## Usage
 ### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
 ```sql
