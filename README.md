@@ -5,3 +5,4 @@ PostgreSQL Extention for buffer cache manipulation
 > make install (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if PG_CONFIG is not defined)    
 ## Setup in postgres
 > CREATE EXTENSION buffercache_tools;
+## Functions
