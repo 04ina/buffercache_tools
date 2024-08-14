@@ -14,7 +14,7 @@ cd buffercache_tools
 ```sh
 make install
 ```    
-or 
+> or 
 ```sh
 make PG_CONFIG=postgres_directory/bin/pg_config install
 ```
@@ -25,7 +25,7 @@ meson build
 cd build  
 ninja install
 ```
-or
+> or
 ```sh  
 meson build -Dpg_config=postgres_directory/bin/pg_config      
 cd build  
