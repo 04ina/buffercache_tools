@@ -3,6 +3,7 @@ PostgreSQL Extention for buffer cache manipulation
 
 1. [Install](#install)
 2. [Usage](#usage)
+3. [Regression testing](#Regression-testing)
    1. [pg_show_relation_buffers](#pg_show_relation_buffers(relname-text))
    3. [Linting](#linting)
 4. [Methods](#methods)
