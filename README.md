@@ -20,7 +20,7 @@ example:
 > SELECT * FROM pg_show_relation_buffers('test_table');  
 >  blocknumber | buffernumber | dirty | usagecount | pinning | fork   
 > -------------+--------------+-------+------------+---------+------  
->            4 |         5076 | t     |          5 |       0 | main  
+>        \t    4 |         5076 | t     |          5 |       0 | main  
 >            3 |         5077 | t     |          5 |       0 | main  
 >            2 |         5078 | t     |          5 |       0 | main  
 >            1 |         5079 | t     |          5 |       0 | main  
