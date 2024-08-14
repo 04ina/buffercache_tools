@@ -15,8 +15,7 @@ PostgreSQL Extention for buffer cache manipulation
 > CREATE EXTENSION buffercache_tools;
 ## Functions
 ### pg_show_relation_buffers(relname text) 
-Show buffers from the buffer cache that belong to a specific relation.
-example:
+Show buffers from the buffer cache that belong to a specific relation.  
 ```sql
 SELECT * FROM pg_show_relation_buffers('test_table');
  blocknumber | buffernumber | dirty | usagecount | pinning | fork 
@@ -30,12 +29,52 @@ SELECT * FROM pg_show_relation_buffers('test_table');
            0 |         5082 | f     |          5 |       0 | fsm
            0 |         5083 | t     |          5 |       0 | main
 ```
-### pg_flush_buffer
-### pg_flush_relation_fork_buffers
-### pg_flush_relation_buffers
-### pg_flush_database_buffers
-### pg_mark_buffer_dirty
-### pg_read_page_into_buffer
+### pg_flush_buffer(buffer integer)
+Write (flush) buffer page to disk without drop
+```sql
+SELECT pg_flush_buffer(5076);
+ pg_flush_buffer 
+-----------------
+ t
+```
+### pg_flush_relation_fork_buffers(relname text, fork text)
+Write relation buffer pages of a specific fork to disk without drop
+```sql
+SELECT * FROM pg_flush_relation_fork_buffers('test_table', 'main');
+ pg_flush_relation_fork_buffers 
+--------------------------------
+ t
+```
+### pg_flush_relation_buffers(relname text)
+Write relation buffer pages to disk without drop 
+```sql
+SELECT * FROM pg_flush_relation_buffers('test_table');
+ pg_flush_relation_buffers 
+---------------------------
+ t
+```
+### pg_flush_database_buffers(dboid oid)
+Write all database buffer pages to disk without drop 
+```sql
+SELECT * FROM pg_flush_database_buffers(4);
+ pg_flush_database_buffers 
+---------------------------
+ t
+```
+### pg_mark_buffer_dirty(buffer integer)
+```sql
+SELECT pg_mark_buffer_dirty(5076);
+ pg_mark_buffer_dirty 
+----------------------
+ t
+```
+### pg_read_page_into_buffer(relname text, fork text, blocknumber integer)
+SELECT pg_read_page_into_buffer('test', 'main', 0);
+```sql
+ pg_read_page_into_buffer 
+--------------------------
+                     5074
+```
 ## Regression testing  
 ### make  
 > make installcheck    
