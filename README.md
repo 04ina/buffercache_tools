@@ -20,7 +20,6 @@ if postgreSQL bin directory is not in PATH, where postgres_directory is the main
 ### meson
 ```sh
 meson build  
-(or "meson build -Dpg_config=postgres_directory/bin/pg_config" if postgreSQL bin directory is not in PATH)      
 cd build  
 ninja install
 ```
