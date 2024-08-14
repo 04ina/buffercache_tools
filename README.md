@@ -12,7 +12,11 @@ PostgreSQL Extention for buffer cache manipulation.
 ```sh
 make install
 ```    
-> (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if postgreSQL bin directory is not in PATH)    
+or 
+```sh
+make PG_CONFIG=postgres_directory/bin/pg_config install
+```
+if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory.  
 ### meson
 > meson build  
 > (or "meson build -Dpg_config=postgres_directory/bin/pg_config" if postgreSQL bin directory is not in PATH)      
