@@ -1,9 +1,16 @@
 # buffercache_tools
 PostgreSQL Extention for buffer cache manipulation 
-## Installation
+## Installation  
 > git clone https://github.com/04ina/buffercache_tools.git  
-> make install (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if PG_CONFIG is not defined)    
-## Setup in postgres
+### make
+> make install    
+> (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if postgreSQL bin directory is not in PATH)    
+### meson
+> meson build
+> (or "meson build -Dpg_config=postgres_directory/bin/pg_config" if postgreSQL bin directory is not in PATH)      
+> cd build  
+> ninja install  
+### Setup in postgres
 > CREATE EXTENSION buffercache_tools;
 ## Functions
 ### Show buffers
