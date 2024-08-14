@@ -9,7 +9,9 @@ PostgreSQL Extention for buffer cache manipulation.
 > git clone https://github.com/04ina/buffercache_tools.git   
 > cd buffercache_tools
 ### make
-> make install    
+```sh
+make install
+```    
 > (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if postgreSQL bin directory is not in PATH)    
 ### meson
 > meson build  
