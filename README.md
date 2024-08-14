@@ -15,7 +15,8 @@ PostgreSQL Extention for buffer cache manipulation
 > CREATE EXTENSION buffercache_tools;
 ## Functions
 ### Show buffers
-pg_show_relation_buffers(relname text) -  Show buffers from the buffer cache that belong to a specific relation.
+#### pg_show_relation_buffers(relname text) 
+Show buffers from the buffer cache that belong to a specific relation.
 example:
 ```sql
 SELECT * FROM pg_show_relation_buffers('test_table');
