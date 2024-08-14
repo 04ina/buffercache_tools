@@ -1,5 +1,5 @@
 # buffercache_tools
-PostgreSQL Extention for buffer cache manipulation 
+PostgreSQL Extention for buffer cache manipulation.
 
 1. [Install](#install)
 2. [Usage](#usage)
