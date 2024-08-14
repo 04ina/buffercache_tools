@@ -31,7 +31,9 @@ ninja install
 ```
 if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory.  
 ### Setup in postgres
-> CREATE EXTENSION buffercache_tools;
+```sql
+CREATE EXTENSION buffercache_tools;
+```
 ## Usage
 ### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
