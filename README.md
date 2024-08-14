@@ -18,5 +18,12 @@ PostgreSQL Extention for buffer cache manipulation
 ### Flush (write) buffers
 ### Mark buffers dirty
 ### Read buffers into buffer cache
+## Regression testing  
+### make  
+> make installcheck    
+> (or "make PG_CONFIG=postgres_directory/bin/pg_config installcheck" if postgreSQL bin directory is not in PATH)   
+### meson  
+> cd build  
+> ninja test  
 
 
