@@ -3,7 +3,7 @@ PostgreSQL Extention for buffer cache manipulation
 
 1. [Install](#install)
 2. [Usage](#usage)
-   1. [pg_show_relation_buffers(relname text)](#"pg_show_relation_buffers(relname text)")
+   1. ["pg_show_relation_buffers(relname text)"](#"pg_show_relation_buffers(relname text)")
    2. [Linting](#linting)
 4. [Methods](#methods)
    1. [glue](#gluepieces-separator)
