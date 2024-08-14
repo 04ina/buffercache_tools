@@ -15,10 +15,16 @@ PostgreSQL Extention for buffer cache manipulation
 > CREATE EXTENSION buffercache_tools;
 ## Functions
 ### Show buffers
-#### asdf
+#### pg_show_relation_buffers
 ### Flush (write) buffers
+#### pg_flush_buffer
+#### pg_flush_relation_fork_buffers
+#### pg_flush_relation_buffers
+#### pg_flush_database_buffers
 ### Mark buffers dirty
+#### pg_mark_buffer_dirty
 ### Read buffers into buffer cache
+#### pg_read_page_into_buffer
 ## Regression testing  
 ### make  
 > make installcheck    
