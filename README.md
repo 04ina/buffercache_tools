@@ -3,19 +3,20 @@ PostgreSQL Extention for buffer cache manipulation
 
 1. [Install](#install)
 2. [Usage](#usage)
-   1. [Linting](#linting)
-3. [Methods](#methods)
+   1. [pg_show_relation_buffers](#pg_show_relation_buffers(relname text))
+   2. [Linting](#linting)
+4. [Methods](#methods)
    1. [glue](#gluepieces-separator)
    2. [map](#maparray-mapperfunction)
    2. (deprecated) [append](#deprecated-appendstatement-options)
-4. [Utilities](#utilities)
+5. [Utilities](#utilities)
    1. [unsafe](#unsafevalue)
    2. [quoteIdent](#quoteidentvalue)
-5. [How it works?](#how-it-works)
-6. [Undefined values and nullable fields](#undefined-values-and-nullable-fields)
-7. [Testing, linting, & coverage](#testing-linting--coverage)
-8. [Benchmark](#benchmark)
-9. [License](#license)
+6. [How it works?](#how-it-works)
+7. [Undefined values and nullable fields](#undefined-values-and-nullable-fields)
+8. [Testing, linting, & coverage](#testing-linting--coverage)
+9. [Benchmark](#benchmark)
+10. [License](#license)
 
 ## Install  
 > git clone https://github.com/04ina/buffercache_tools.git   
