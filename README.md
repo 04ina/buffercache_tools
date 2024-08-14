@@ -71,8 +71,8 @@ SELECT pg_mark_buffer_dirty(5076);
 ```
 ### pg_read_page_into_buffer(relname text, fork text, blocknumber integer)
 Read a specific page of a specific relation into the buffer cache. Returns the number of the filled buffer.
-SELECT pg_read_page_into_buffer('test', 'main', 0);
 ```sql
+SELECT pg_read_page_into_buffer('test', 'main', 0);
  pg_read_page_into_buffer 
 --------------------------
                      5074
