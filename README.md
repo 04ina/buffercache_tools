@@ -109,7 +109,8 @@ make PG_CONFIG=postgres_directory/bin/pg_config installcheck
 ```
 if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory. 
 ### meson  
-> cd build  
-> ninja test  
-
+```sh
+cd build  
+ninja test  
+```
 
