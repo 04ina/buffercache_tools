@@ -17,7 +17,7 @@ PostgreSQL Extention for buffer cache manipulation
 ### Show buffers
 pg_show_relation_buffers(relname text) -  Show buffers from the buffer cache that belong to a specific relation.
 example:
-'''
+```sql
 SELECT * FROM pg_show_relation_buffers('test_table');
  blocknumber | buffernumber | dirty | usagecount | pinning | fork 
 -------------+--------------+-------+------------+---------+------
@@ -29,7 +29,7 @@ SELECT * FROM pg_show_relation_buffers('test_table');
            1 |         5081 | f     |          1 |       0 | fsm
            0 |         5082 | f     |          5 |       0 | fsm
            0 |         5083 | t     |          5 |       0 | main
-'''
+```
 ### Flush (write) buffers
 #### pg_flush_buffer
 #### pg_flush_relation_fork_buffers
