@@ -14,8 +14,7 @@ PostgreSQL Extention for buffer cache manipulation
 ### Setup in postgres
 > CREATE EXTENSION buffercache_tools;
 ## Functions
-### Show buffers
-#### pg_show_relation_buffers(relname text) 
+### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.
 example:
 ```sql
@@ -31,15 +30,12 @@ SELECT * FROM pg_show_relation_buffers('test_table');
            0 |         5082 | f     |          5 |       0 | fsm
            0 |         5083 | t     |          5 |       0 | main
 ```
-### Flush (write) buffers
-#### pg_flush_buffer
-#### pg_flush_relation_fork_buffers
-#### pg_flush_relation_buffers
-#### pg_flush_database_buffers
-### Mark buffers dirty
-#### pg_mark_buffer_dirty
-### Read buffers into buffer cache
-#### pg_read_page_into_buffer
+### pg_flush_buffer
+### pg_flush_relation_fork_buffers
+### pg_flush_relation_buffers
+### pg_flush_database_buffers
+### pg_mark_buffer_dirty
+### pg_read_page_into_buffer
 ## Regression testing  
 ### make  
 > make installcheck    
