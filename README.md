@@ -6,3 +6,9 @@ PostgreSQL Extention for buffer cache manipulation
 ## Setup in postgres
 > CREATE EXTENSION buffercache_tools;
 ## Functions
+### Show buffers
+### Flush (write) buffers
+### Mark buffers dirty
+### Read buffers into buffer cache
+
+
