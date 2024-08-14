@@ -6,7 +6,7 @@ PostgreSQL Extention for buffer cache manipulation
 > make install    
 > (or "make PG_CONFIG=postgres_directory/bin/pg_config install" if postgreSQL bin directory is not in PATH)    
 ### meson
-> meson build
+> meson build  
 > (or "meson build -Dpg_config=postgres_directory/bin/pg_config" if postgreSQL bin directory is not in PATH)      
 > cd build  
 > ninja install  
