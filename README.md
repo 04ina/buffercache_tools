@@ -6,8 +6,10 @@ PostgreSQL Extention for buffer cache manipulation.
 3. [Regression testing](#Regression-testing)
 
 ## Install  
-> git clone https://github.com/04ina/buffercache_tools.git   
-> cd buffercache_tools
+```sh
+git clone https://github.com/04ina/buffercache_tools.git   
+cd buffercache_tools
+```
 ### make
 ```sh
 make install
