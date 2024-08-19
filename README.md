@@ -52,6 +52,14 @@ SELECT * FROM pg_show_relation_buffers('test_table');
            0 |         5082 | f     |          5 |       0 | fsm
            0 |         5083 | t     |          5 |       0 | main
 ```
+### pg_mark_buffer_dirty(buffer integer)
+Mark buffer dirty.
+```sql
+SELECT pg_mark_buffer_dirty(5076);
+ pg_mark_buffer_dirty 
+----------------------
+ t
+```
 ### pg_flush_buffer(buffer integer)
 Write (flush) buffer page to disk without drop.
 ```sql
@@ -60,11 +68,27 @@ SELECT pg_flush_buffer(5076);
 -----------------
  t
 ```
+### pg_mark_relation_fork_buffers_dirty(relname text, fork text)
+Mark relation buffer pages dirty of a specific fork. 
+```sql
+SELECT * FROM pg_mark_relation_fork_buffers_dirty('test_table', 'main');
+ pg_mark_relation_fork_buffers_dirty 
+-------------------------------------
+ t
+```
 ### pg_flush_relation_fork_buffers(relname text, fork text)
 Write relation buffer pages of a specific fork to disk without drop.
 ```sql
 SELECT * FROM pg_flush_relation_fork_buffers('test_table', 'main');
  pg_flush_relation_fork_buffers 
+--------------------------------
+ t
+```
+### pg_mark_relation_buffers_dirty(relname text)
+Mark relation buffer pages dirty.
+```sql
+SELECT * FROM pg_mark_relation_buffers_dirty('test_table');
+ pg_mark_relation_buffers_dirty 
 --------------------------------
  t
 ```
@@ -76,6 +100,14 @@ SELECT * FROM pg_flush_relation_buffers('test_table');
 ---------------------------
  t
 ```
+### pg_mark_database_buffers_dirty(dboid oid)
+Mark all database buffer pages dirty.
+```sql
+SELECT * FROM pg_mark_database_buffers_dirty(4);
+ pg_mark_database_buffers_dirty 
+--------------------------------
+ t
+```
 ### pg_flush_database_buffers(dboid oid)
 Write all database buffer pages to disk without drop.
 ```sql
@@ -84,12 +116,20 @@ SELECT * FROM pg_flush_database_buffers(4);
 ---------------------------
  t
 ```
-### pg_mark_buffer_dirty(buffer integer)
-Mark buffer dirty.
+### pg_mark_tablespace_buffers_dirty(spcoid oid)
+Mark all tablespace buffer pages drity. 
 ```sql
-SELECT pg_mark_buffer_dirty(5076);
- pg_mark_buffer_dirty 
-----------------------
+SELECT * FROM pg_mark_tablespace_buffers_dirty(1456);
+ pg_mark_tablespace_buffers_dirty 
+----------------------------------
+ t
+```
+### pg_flush_tablespace_buffers(spcoid oid)
+Write all tablespace buffer pages to disk without drop.
+```sql
+SELECT * FROM pg_flush_tablespace_buffers(1456);
+ pg_flush_tablespace_buffers 
+-----------------------------
  t
 ```
 ### pg_read_page_into_buffer(relname text, fork text, blocknumber integer)
