@@ -21,7 +21,6 @@
 #include "storage/lmgr.h"
 #include "utils/builtins.h"
 #include "utils/relcache.h"
-#include "utils/relfilenumbermap.h"
 #include "utils/tuplestore.h"
 #include "utils/varlena.h"
 
