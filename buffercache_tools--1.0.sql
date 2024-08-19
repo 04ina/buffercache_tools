@@ -4,6 +4,99 @@
 \echo Use "CREATE EXTENSION buffercache_tools" to load this file. \quit
 
 --
+-- pg_mark_buffer_dirty()
+--
+CREATE FUNCTION pg_mark_buffer_dirty(
+    IN buffer integer)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_mark_buffer_dirty'
+LANGUAGE C STRICT;
+
+--
+-- pg_flush_buffer()
+--
+CREATE FUNCTION pg_flush_buffer(
+    IN buffer integer)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_flush_buffer'
+LANGUAGE C STRICT;
+
+--
+-- pg_mark_relation_fork_buffers_dirty()
+--
+CREATE FUNCTION pg_mark_relation_fork_buffers_dirty(
+    IN relname text, 
+    IN fork text)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_mark_relation_fork_buffers_dirty'
+LANGUAGE C STRICT;
+
+--
+-- pg_flush_relation_fork_buffers()
+--
+CREATE FUNCTION pg_flush_relation_fork_buffers(
+    IN relname text, 
+    IN fork text)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_flush_relation_fork_buffers'
+LANGUAGE C STRICT;
+
+--
+-- pg_mark_relation_buffers_dirty()
+--
+CREATE FUNCTION pg_mark_relation_buffers_dirty(
+    IN relname text)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_mark_relation_buffers_dirty'
+LANGUAGE C STRICT;
+
+--
+-- pg_flush_relation_buffers()
+--
+CREATE FUNCTION pg_flush_relation_buffers(
+    IN relname text)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_flush_relation_buffers'
+LANGUAGE C STRICT;
+
+
+--
+-- pg_mark_database_buffers_dirty()
+--
+CREATE FUNCTION pg_mark_database_buffers_dirty(
+    IN dboid oid)
+RETURNS bool
+AS 'MODULE_PATHNAME', 'pg_mark_database_buffers_dirty'
+LANGUAGE C STRICT;
+
+--
+-- pg_flush_database_buffers()
+--
+CREATE FUNCTION pg_flush_database_buffers(
+    IN dboid oid)
+RETURNS bool
+AS 'MODULE_PATHNAME', 'pg_flush_database_buffers'
+LANGUAGE C STRICT;
+
+--
+-- pg_mark_tablespace_buffers_dirty()
+--
+CREATE FUNCTION pg_mark_tablespace_buffers_dirty(
+    IN dboid oid)
+RETURNS bool
+AS 'MODULE_PATHNAME', 'pg_mark_tablespace_buffers_dirty'
+LANGUAGE C STRICT;
+
+--
+-- pg_flush_tablespace_buffers()
+--
+CREATE FUNCTION pg_flush_tablespace_buffers(
+    IN spcoid oid)
+RETURNS bool
+AS 'MODULE_PATHNAME', 'pg_flush_tablespace_buffers'
+LANGUAGE C STRICT;
+
+--
 -- pg_show_relation_buffers()
 --
 CREATE FUNCTION pg_show_relation_buffers(IN relname text,
@@ -26,50 +119,4 @@ CREATE FUNCTION pg_read_page_into_buffer(
     IN BluckNumber integer) 
 RETURNS integer 
 AS 'MODULE_PATHNAME', 'pg_read_page_into_buffer'
-LANGUAGE C STRICT;
-
---
--- pg_flush_buffer()
---
-CREATE FUNCTION pg_flush_buffer(
-    IN buffer integer)
-RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_buffer'
-LANGUAGE C STRICT;
-
---
--- pg_mark_buffer_dirty()
---
-CREATE FUNCTION pg_mark_buffer_dirty(
-    IN buffer integer)
-RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_mark_buffer_dirty'
-LANGUAGE C STRICT;
-
---
--- pg_flush_relation_fork_buffers()
---
-CREATE FUNCTION pg_flush_relation_fork_buffers(
-    IN relname text, 
-    IN fork text)
-RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_relation_fork_buffers'
-LANGUAGE C STRICT;
-
---
--- pg_flush_relation_buffers()
---
-CREATE FUNCTION pg_flush_relation_buffers(
-    IN relname text)
-RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_relation_buffers'
-LANGUAGE C STRICT;
-
---
--- pg_flush_database_buffers()
---
-CREATE FUNCTION pg_flush_database_buffers(
-    IN dboid oid)
-RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_flush_database_buffers'
 LANGUAGE C STRICT;

@@ -27,13 +27,424 @@
 
 PG_MODULE_MAGIC;
 
+PG_FUNCTION_INFO_V1(pg_mark_buffer_dirty);
+PG_FUNCTION_INFO_V1(pg_flush_buffer);
+
+PG_FUNCTION_INFO_V1(pg_mark_relation_fork_buffers_dirty);
+PG_FUNCTION_INFO_V1(pg_flush_relation_fork_buffers);
+
+PG_FUNCTION_INFO_V1(pg_mark_relation_buffers_dirty);
+PG_FUNCTION_INFO_V1(pg_flush_relation_buffers);
+
+PG_FUNCTION_INFO_V1(pg_mark_database_buffers_dirty);
+PG_FUNCTION_INFO_V1(pg_flush_database_buffers);
+
+PG_FUNCTION_INFO_V1(pg_mark_tablespace_buffers_dirty);
+PG_FUNCTION_INFO_V1(pg_flush_tablespace_buffers);
+
+
 PG_FUNCTION_INFO_V1(pg_show_relation_buffers);
 PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
-PG_FUNCTION_INFO_V1(pg_flush_buffer);
-PG_FUNCTION_INFO_V1(pg_mark_buffer_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_relation_fork_buffers);
-PG_FUNCTION_INFO_V1(pg_flush_database_buffers);
-PG_FUNCTION_INFO_V1(pg_flush_relation_buffers);
+
+/*
+ * Macroses for the last argument of handler functions.
+ *
+ * BCT_MARK_DIRTY - Mark postgres object dirty
+ * 
+ * BCT_FLUSH - Flush postgres object
+ */
+#ifndef BCT_MARK_DIRTY
+	#define BCT_MARK_DIRTY MarkBufferDirty
+#else
+	Assert(false);
+#endif 
+
+#ifndef BCT_FLUSH
+	#define BCT_FLUSH FlushOneBuffer
+#else
+	Assert(false);
+#endif
+
+/*-------------------------------------------------------------------------
+ * 								Headers 
+ *-------------------------------------------------------------------------
+ */
+static void pg_one_buffer_handler(Buffer bufNum, void (* BufferFunc)(Buffer buffer));
+
+static void pg_relation_fork_buffers_handler(text *relName, text *forkName, 
+											void (* BufferFunc)(Buffer buffer));
+
+static void pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer));
+
+static void pg_database_buffers_handler(Oid dbOid, void (* BufferFunc)(Buffer buffer));
+
+static void pg_tablespace_buffers_handler(Oid spcOid, void (* BufferFunc)(Buffer buffer));
+
+static void pg_superuser_check(void);
+
+static void pg_other_temp_check(Relation rel);
+
+/*-------------------------------------------------------------------------
+ * 								Check functions
+ *-------------------------------------------------------------------------
+ */
+
+void
+pg_superuser_check(void)
+{
+	if (!superuser())
+		ereport(ERROR,
+				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+				errmsg("must be superuser to flush buffers")));
+}
+
+/*
+* Reject attempts to read non-local temporary relations; we would be
+* likely to get wrong data since we have no visibility into the owning
+* session's local buffers.
+*/
+void 
+pg_other_temp_check(Relation rel)
+{
+	if (RELATION_IS_OTHER_TEMP(rel))
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				errmsg("cannot access temporary tables of other sessions")));
+}
+
+/*-------------------------------------------------------------------------
+ * 								Handlers 
+ *-------------------------------------------------------------------------
+ */
+
+/*
+ * One buffer handler
+ */
+void
+pg_one_buffer_handler(Buffer bufNum, void (* BufferFunc)(Buffer buffer))
+{
+	if (bufNum > NBuffers || bufNum <= InvalidBuffer)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("buffer %d does not exist", bufNum)));
+
+	LockBuffer(bufNum, BUFFER_LOCK_EXCLUSIVE);
+	BufferFunc(bufNum);
+	LockBuffer(bufNum, BUFFER_LOCK_UNLOCK);
+}
+
+/*
+ * Relation fork buffers handler
+ */
+void
+pg_relation_fork_buffers_handler(text *relName, text *forkName, 
+								void (* BufferFunc)(Buffer buffer))
+{
+	Buffer i;
+	BufferDesc *bufHdr;
+	uint32 bufState;
+
+	Relation rel;
+	RangeVar *relrv;
+	ForkNumber forkNum; 
+
+	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
+	rel = relation_openrv(relrv, AccessExclusiveLock);
+
+	pg_other_temp_check(rel);
+
+	forkNum = forkname_to_number(text_to_cstring(forkName));	
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+
+		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator) &&
+			bufHdr->tag.forkNum == forkNum)
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufferFunc(i);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+		}
+		else
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+
+	relation_close(rel, AccessExclusiveLock);
+}
+
+/*
+ * Relation buffers handler
+ */
+void
+pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer))
+{
+	Buffer i;
+	BufferDesc *bufHdr;
+	uint32 bufState;
+
+	Relation rel;
+	RangeVar *relrv;
+
+	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
+	rel = relation_openrv(relrv, AccessExclusiveLock);
+
+	pg_other_temp_check(rel);
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+
+		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator))
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufferFunc(i);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+		}
+		else 
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+
+	relation_close(rel, AccessExclusiveLock);
+}
+
+/*
+ * Database buffers handler
+ */
+void
+pg_database_buffers_handler(Oid dbOid, void (* BufferFunc)(Buffer buffer))
+{
+	Buffer i;
+	BufferDesc *bufHdr;
+	uint32 bufState;
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+
+		if (bufHdr->tag.dbOid == dbOid)
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufferFunc(i);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+		}
+		else
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+}
+
+/*
+ * Tablespace buffers handler
+ */
+void
+pg_tablespace_buffers_handler(Oid spcOid, void (* BufferFunc)(Buffer buffer))
+{
+	Buffer i;
+	BufferDesc *bufHdr;
+	uint32 bufState;
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+
+		if (bufHdr->tag.spcOid == spcOid)
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufferFunc(i);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+		}
+		else
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+}
+
+/*-------------------------------------------------------------------------
+ * 								extension functions	 
+ *-------------------------------------------------------------------------
+ */
+
+/*
+ * Mark buffer dirty
+ */
+Datum
+pg_mark_buffer_dirty(PG_FUNCTION_ARGS)
+{
+	Buffer	bufNum = PG_GETARG_INT32(0);
+
+	pg_superuser_check();
+
+	pg_one_buffer_handler(bufNum, BCT_MARK_DIRTY);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Write (flush) buffer page to disk without drop
+ */
+Datum
+pg_flush_buffer(PG_FUNCTION_ARGS)
+{
+	Buffer	bufNum = PG_GETARG_INT32(0);
+
+	pg_superuser_check();
+
+	pg_one_buffer_handler(bufNum, BCT_FLUSH);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Mark relation buffer pages dirty of a specific fork 
+ */
+Datum
+pg_mark_relation_fork_buffers_dirty(PG_FUNCTION_ARGS) 
+{
+	text *relName = PG_GETARG_TEXT_PP(0);
+	text *forkName = PG_GETARG_TEXT_PP(1);
+
+	pg_superuser_check();
+
+	pg_relation_fork_buffers_handler(relName, forkName, BCT_MARK_DIRTY);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Write relation buffer pages of a specific fork 
+ * to disk without drop
+ */
+Datum
+pg_flush_relation_fork_buffers(PG_FUNCTION_ARGS) 
+{
+	text *relName = PG_GETARG_TEXT_PP(0);
+	text *forkName = PG_GETARG_TEXT_PP(1);
+
+	pg_superuser_check();
+
+	pg_relation_fork_buffers_handler(relName, forkName, BCT_FLUSH);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Mark relation buffer pages dirty  
+ */
+Datum
+pg_mark_relation_buffers_dirty(PG_FUNCTION_ARGS) 
+{
+	text *relName = PG_GETARG_TEXT_PP(0);
+
+	pg_superuser_check();
+
+	pg_relation_buffers_handler(relName, BCT_MARK_DIRTY);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Write relation buffer pages to disk without drop 
+ */
+Datum
+pg_flush_relation_buffers(PG_FUNCTION_ARGS) 
+{
+	text *relName = PG_GETARG_TEXT_PP(0);
+
+	pg_superuser_check();
+
+	pg_relation_buffers_handler(relName, BCT_FLUSH);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Mark all database buffer pages dirty 
+ */
+Datum 
+pg_mark_database_buffers_dirty(PG_FUNCTION_ARGS)
+{
+	Oid dbOid = PG_GETARG_OID(0);	
+	
+	pg_superuser_check();
+
+	if (database_is_invalid_oid(dbOid)) 
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("invalid database oid")));
+
+	pg_database_buffers_handler(dbOid, BCT_MARK_DIRTY);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Write all database buffer pages to disk without drop 
+ */
+Datum 
+pg_flush_database_buffers(PG_FUNCTION_ARGS)
+{
+	Oid dbOid = PG_GETARG_OID(0);	
+	
+	pg_superuser_check();
+
+	if (database_is_invalid_oid(dbOid)) 
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("invalid database oid")));
+
+	pg_database_buffers_handler(dbOid, BCT_FLUSH);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Mark all tablespace buffer pages drity 
+ */
+Datum 
+pg_mark_tablespace_buffers_dirty(PG_FUNCTION_ARGS)
+{
+	Oid spcOid = PG_GETARG_OID(0);	
+	
+	pg_superuser_check();
+
+	pg_tablespace_buffers_handler(spcOid, BCT_MARK_DIRTY);
+
+	PG_RETURN_BOOL(true);
+}
+
+/*
+ * Write all tablespace buffer pages to disk without drop 
+ */
+Datum 
+pg_flush_tablespace_buffers(PG_FUNCTION_ARGS)
+{
+	Oid spcOid = PG_GETARG_OID(0);	
+	
+	pg_superuser_check();
+
+	pg_tablespace_buffers_handler(spcOid, BCT_FLUSH);
+
+	PG_RETURN_BOOL(true);
+}
 
 /*
  * Show buffers from the buffer cache that belong to 
@@ -56,28 +467,22 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 	Datum	values[6];
 	bool nulls[6] = {0};
 
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to show relation buffers")));	
+	pg_superuser_check();
 
 	InitMaterializedSRF(fcinfo, 0);
 
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relname));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
-	/*
-	 * Reject attempts to read non-local temporary relations; we would be
-	 * likely to get wrong data since we have no visibility into the owning
-	 * session's local buffers.
-	 */
-	if (RELATION_IS_OTHER_TEMP(rel))
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					errmsg("cannot access temporary tables of other sessions")));
+	pg_other_temp_check(rel);
 
 	if (RelationUsesLocalBuffers(rel))
 	{
+		/*  
+		 * Show temporary table buffers
+		 */
+
+		/* Iterate over all local buffers */
 		for (i = 0; i < NLocBuffer; i++)
 		{
 			bufHdr = GetLocalBufferDescriptor(i);
@@ -104,9 +509,9 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 	}
 	else
 	{
+		/* Iterate over all non-local buffers */
 		for (i = 0; i < NBuffers; i++)
 		{
-			
 			bufHdr = GetBufferDescriptor(i);
 
 			bufState = LockBufHdr(bufHdr);
@@ -143,33 +548,23 @@ pg_read_page_into_buffer(PG_FUNCTION_ARGS)
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 	text *forkName = PG_GETARG_TEXT_PP(1);
-	ForkNumber forkNum; 
 	BlockNumber blockNum = PG_GETARG_INT32(2);
+	ForkNumber forkNum; 
 	Buffer	readBuf;	
 
 	Relation rel;
 	RangeVar *relrv;
 
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to use raw page functions")));
+	pg_superuser_check();
 
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
 	forkNum = forkname_to_number(text_to_cstring(forkName));	
 
-	/*
-	 * Reject attempts to read non-local temporary relations; we would be
-	 * likely to get wrong data since we have no visibility into the owning
-	 * session's local buffers.
-	 */
-	if (RELATION_IS_OTHER_TEMP(rel))
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				errmsg("cannot access temporary tables of other sessions")));
+	pg_other_temp_check(rel);
 
+	/* Is block number out of range for relation? */
 	if (blockNum >= RelationGetNumberOfBlocksInFork(rel, forkNum))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -183,173 +578,4 @@ pg_read_page_into_buffer(PG_FUNCTION_ARGS)
 	relation_close(rel, AccessExclusiveLock);
 
 	PG_RETURN_INT32((int32) readBuf);
-}
-
-/*
- * Write (flush) buffer page to disk without drop
- */
-Datum
-pg_flush_buffer(PG_FUNCTION_ARGS)
-{
-	Buffer	bufNum = PG_GETARG_INT32(0);
-
-	if (bufNum > NBuffers || bufNum <= InvalidBuffer)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("buffer %d does not exist", bufNum)));
-
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to flush buffers")));
-
-	LockBuffer(bufNum, BUFFER_LOCK_EXCLUSIVE);
-	FlushOneBuffer(bufNum);
-	LockBuffer(bufNum, BUFFER_LOCK_UNLOCK);
-
-	PG_RETURN_BOOL(true);
-}
-
-/*
- * Mark buffer dirty
- */
-Datum
-pg_mark_buffer_dirty(PG_FUNCTION_ARGS)
-{
-	Buffer	bufNum = PG_GETARG_INT32(0);
-
-	if (bufNum > NBuffers || bufNum <= InvalidBuffer)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("buffer %d does not exist", bufNum)));
-
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to flush buffers")));
-
-	LockBuffer(bufNum, BUFFER_LOCK_EXCLUSIVE);
-	MarkBufferDirty(bufNum);
-	LockBuffer(bufNum, BUFFER_LOCK_UNLOCK);
-
-	PG_RETURN_BOOL(true);
-}
-
-/*
- * Write relation buffer pages of a specific fork 
- * to disk without drop
- */
-Datum
-pg_flush_relation_fork_buffers(PG_FUNCTION_ARGS) 
-{
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
-
-	Relation rel;
-	RangeVar *relrv;
-	ForkNumber forkNum; 
-
-	text *relName = PG_GETARG_TEXT_PP(0);
-	text *forkName = PG_GETARG_TEXT_PP(1);
-
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to flush buffers")));
-
-	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
-	rel = relation_openrv(relrv, AccessExclusiveLock);
-
-	forkNum = forkname_to_number(text_to_cstring(forkName));	
-
-	for (i = 1; i <= NBuffers; i++)
-	{
-		
-		bufHdr = GetBufferDescriptor(i - 1);
-		bufState = LockBufHdr(bufHdr);
-
-		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator) &&
-			bufHdr->tag.forkNum == forkNum)
-		{
-			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
-			UnlockBufHdr(bufHdr, bufState);
-			FlushOneBuffer(i);
-			bufState = LockBufHdr(bufHdr);
-			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
-		}
-
-		UnlockBufHdr(bufHdr, bufState);
-	}
-	relation_close(rel, AccessExclusiveLock);
-
-	PG_RETURN_BOOL(true);
-}
-
-/*
- * Write relation buffer pages to disk without drop 
- */
-Datum
-pg_flush_relation_buffers(PG_FUNCTION_ARGS) 
-{
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
-
-	Relation rel;
-	RangeVar *relrv;
-
-	text *relName = PG_GETARG_TEXT_PP(0);
-
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to flush buffers")));
-
-	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
-	rel = relation_openrv(relrv, AccessExclusiveLock);
-
-	for (i = 1; i <= NBuffers; i++)
-	{
-		
-		bufHdr = GetBufferDescriptor(i - 1);
-		bufState = LockBufHdr(bufHdr);
-
-		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator))
-		{
-			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
-			UnlockBufHdr(bufHdr, bufState);
-			FlushOneBuffer(i);
-			bufState = LockBufHdr(bufHdr);
-			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
-		}
-
-		UnlockBufHdr(bufHdr, bufState);
-	}
-	relation_close(rel, AccessExclusiveLock);
-
-	PG_RETURN_BOOL(true);
-}
-
-/*
- * Write all database buffer pages to disk without drop 
- */
-Datum 
-pg_flush_database_buffers(PG_FUNCTION_ARGS)
-{
-	Oid dbOid = PG_GETARG_OID(0);	
-	
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				errmsg("must be superuser to flush database buffers")));
-
-	if (database_is_invalid_oid(dbOid)) 
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("invalid database oid")));
-
-	FlushDatabaseBuffers(dbOid);
-
-	PG_RETURN_BOOL(true);
 }
