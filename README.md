@@ -141,18 +141,15 @@ SELECT pg_read_page_into_buffer('test', 'main', 0);
                      5074
 ```
 ## Regression testing  
-### make  
+To run the test suite, execute
 ```sh
 make installcheck    
 ```
 or
 ```sh
-make PG_CONFIG=postgres_directory/bin/pg_config installcheck
-```
-if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory. 
-### meson  
-```sh
 cd build  
 ninja test  
 ```
 
+
+make PG_CONFIG=postgres_directory/bin/pg_config installcheck
