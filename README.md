@@ -6,12 +6,9 @@ Relation
 Relation fork
 Database
 Tablespace 
-It is possible to clear and mark dirty specific buffers. 
-
+It is possible to clear and mark dirty specific buffers.   
+  
 Also, buffercache_tools allows you to read a specific page of a relation into the buffer cache and see information about all buffers of a specific relation.
-
-
-
 
 1. [Install](#install)
 2. [Usage](#usage)
@@ -41,7 +38,7 @@ cd build
 ninja install
 ```
 ## Usage
-There are 12 functions for working with the buffer cache. 
+There are 12 functions for working with the buffer cache.  
 At the moment, information about temporary table buffers can only be viewed, but not changed.
 ### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
