@@ -1,11 +1,12 @@
 # buffercache_tools
 PostgreSQL Extention for buffer cache manipulation.
 
-buffercache_tools allows you to flush and mark dirty buffers of various postgres objects, such as: 
+buffercache_tools allows you to flush and mark dirty buffers of various postgres objects, such as:
 1. Relation
 2. Relation fork
 3. Database
-4. Tablespace   
+4. Tablespace
+
 It is possible to clear and mark dirty specific buffers.   
   
 Also, buffercache_tools allows you to read a specific page of a relation into the buffer cache and see information about all buffers of a specific relation.
