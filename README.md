@@ -41,6 +41,8 @@ cd build
 ninja install
 ```
 ## Usage
+There are 12 functions for working with the buffer cache. 
+At the moment, information about temporary table buffers can only be viewed, but not changed.
 ### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
 ```sql
