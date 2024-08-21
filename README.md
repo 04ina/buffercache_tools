@@ -1,6 +1,18 @@
 # buffercache_tools
 PostgreSQL Extention for buffer cache manipulation.
 
+buffercache_tools allows you to flush and mark dirty buffers of various postgres objects, such as: 
+Relation 
+Relation fork
+Database
+Tablespace 
+It is possible to clear and mark dirty specific buffers. 
+
+Also, buffercache_tools allows you to read a specific page of a relation into the buffer cache and see information about all buffers of a specific relation.
+
+
+
+
 1. [Install](#install)
 2. [Usage](#usage)
 3. [Test suite](#test-suite)
@@ -43,6 +55,17 @@ SELECT * FROM pg_show_relation_buffers('test_table');
            1 |         5081 | f     |          1 |       0 | fsm
            0 |         5082 | f     |          5 |       0 | fsm
            0 |         5083 | t     |          5 |       0 | main
+```
+The standard pg_buffercache extension also has a function for displaying information about buffers in the buffer cache, but pg_show_relation_buffers() will also let you see information about local buffers of temporary tables that exist only in the current session.
+```sql
+SELECT * FROM pg_show_relation_buffers('test_temp_table');
+ blocknumber | buffernumber | dirty | usagecount | pinning | fork 
+-------------+--------------+-------+------------+---------+------
+           0 |           -1 | t     |          3 |       0 | main
+           0 |           -2 | t     |          2 |       0 | vm
+           0 |           -3 | t     |          2 |       0 | fsm
+           1 |           -4 | t     |          2 |       0 | fsm
+           2 |           -5 | t     |          2 |       0 | fsm
 ```
 ### pg_mark_buffer_dirty(buffer integer)
 Mark buffer dirty.
