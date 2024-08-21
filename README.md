@@ -28,10 +28,6 @@ meson build -Dpg_config=postgres_directory/bin/pg_config
 cd build  
 ninja install
 ```
-### Setup in postgres
-```sql
-CREATE EXTENSION buffercache_tools;
-```
 ## Usage
 ### pg_show_relation_buffers(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
