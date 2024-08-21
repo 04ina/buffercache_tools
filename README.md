@@ -6,10 +6,8 @@ PostgreSQL Extention for buffer cache manipulation.
 3. [Test suite](#test-suite)
 
 ## Install  
-```sh
-git clone https://github.com/04ina/buffercache_tools.git   
-cd buffercache_tools
-```
+This extension supports building with make and meson. It is necessary that the postgres bin directory is specified in the PATH environment variable. Alternatively, you can also specify the absolute directory of the client application yourself.
+
 ### make
 ```sh
 make install
@@ -18,7 +16,6 @@ or
 ```sh
 make PG_CONFIG=postgres_directory/bin/pg_config install
 ```
-if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory.  
 ### meson
 ```sh
 meson build  
@@ -31,7 +28,6 @@ meson build -Dpg_config=postgres_directory/bin/pg_config
 cd build  
 ninja install
 ```
-if postgreSQL bin directory is not in PATH, where postgres_directory is the main PostgreSQL directory.  
 ### Setup in postgres
 ```sql
 CREATE EXTENSION buffercache_tools;
