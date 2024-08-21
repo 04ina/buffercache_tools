@@ -3,7 +3,7 @@ PostgreSQL Extention for buffer cache manipulation.
 
 1. [Install](#install)
 2. [Usage](#usage)
-3. [Regression testing](#Regression-testing)
+3. [Test suite](#test-suite)
 
 ## Install  
 ```sh
@@ -140,7 +140,7 @@ SELECT pg_read_page_into_buffer('test', 'main', 0);
 --------------------------
                      5074
 ```
-## Regression testing  
+## Test suite 
 To run the test suite, execute
 ```sh
 make installcheck    
@@ -150,6 +150,4 @@ or
 cd build  
 ninja test  
 ```
-
-
-make PG_CONFIG=postgres_directory/bin/pg_config installcheck
+after installation.
