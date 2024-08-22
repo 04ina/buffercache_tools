@@ -19,7 +19,7 @@ INSERT INTO test_table_1
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_1 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_1') 
         ORDER BY fork, blocknumber; 
 
@@ -30,7 +30,7 @@ INSERT INTO test_table_2
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_2 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_2') 
         ORDER BY fork, blocknumber; 
 
@@ -44,7 +44,7 @@ INSERT INTO test_table_3
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_3 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_3') 
         ORDER BY fork, blocknumber; 
 VACUUM;

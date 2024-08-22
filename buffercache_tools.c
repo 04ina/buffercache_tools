@@ -8,7 +8,12 @@
  *
  *-------------------------------------------------------------------------
  */
+
 #include "postgres.h"
+
+#if (PG_VERSION_NUM >= 160000)
+#define PG_VERSION_NUM_EQUAL_OR_MORE_160000
+#endif
 
 #include "access/relation.h"
 #include "catalog/namespace.h"
@@ -18,11 +23,73 @@
 #include "nodes/execnodes.h"
 #include "storage/bufmgr.h"
 #include "storage/buf_internals.h"
+
+/* PG_VERSION_NUM < 160000 */
+#ifndef PG_VERSION_NUM_EQUAL_OR_MORE_160000 
+#define HAVE_RELFILENUMBERMAP_H
+#include "storage/relfilenode.h"
+#endif
+
 #include "storage/lmgr.h"
 #include "utils/builtins.h"
 #include "utils/relcache.h"
+#include "miscadmin.h"
 #include "utils/tuplestore.h"
 #include "utils/varlena.h"
+
+#ifdef PG_VERSION_NUM_EQUAL_OR_MORE_160000
+
+/*
+ * does the buffer page belongs to the relation?
+ */
+#define BCT_IS_BUFFER_BELONGS_RELATION(_bct_bufHdr_, _bct_rel_) \
+	BufTagMatchesRelFileLocator(&_bct_bufHdr_->tag, &_bct_rel_->rd_locator)
+
+/*
+ * does the buffer page belongs to the database?
+ */
+#define BCT_IS_BUFFER_BELONGS_DATABASE(_bct_bufHdr_, _bct_dboid_) \
+	bufHdr->tag.dbOid == _bct_dboid_ 
+
+/*
+ * does the buffer page belongs to the tablespace?
+ */
+#define BCT_IS_BUFFER_BELONGS_TABLESPACE(_bct_bufHdr_, _bct_spcOid_) \
+	bufHdr->tag.spcOid == _bct_spcOid_ 
+
+#else 
+
+/*
+ * does the buffer page belongs to the relation?
+ */
+#define BCT_IS_BUFFER_BELONGS_RELATION(_bct_bufHdr_, _bct_rel_) \
+	_bct_bufHdr_->tag.rnode.relNode == _bct_rel_->rd_node.relNode && \
+	_bct_bufHdr_->tag.rnode.dbNode == _bct_rel_->rd_node.dbNode && \
+	_bct_bufHdr_->tag.rnode.spcNode == _bct_rel_->rd_node.spcNode
+
+/*
+ * does the buffer page belongs to the database?
+ */
+#define BCT_IS_BUFFER_BELONGS_DATABASE(_bct_bufHdr_, _bct_dbOid_) \
+	_bct_bufHdr_->tag.rnode.dbNode == _bct_dbOid_ 
+
+/*
+ * does the buffer page belongs to the tablespace?
+ */
+#define BCT_IS_BUFFER_BELONGS_TABLESPACE(_bct_bufHdr_, _bct_spcOid_) \
+	_bct_bufHdr_->tag.rnode.spcNode == _bct_spcOid_ 
+
+#endif	/* PG_VERSION_NUM >= 160000*/
+
+/*
+ * does the buffer page belongs to the fork?
+ */
+#define BCT_IS_BUFFER_BELONGS_FORK(_bct_bufHdr_, _bct_forkNum_) \
+	_bct_bufHdr_->tag.forkNum == _bct_forkNum_ 
+
+#ifndef tuplestore_donestoring
+#define tuplestore_donestoring(state) 	((void) 0)
+#endif
 
 PG_MODULE_MAGIC;
 
@@ -41,8 +108,8 @@ PG_FUNCTION_INFO_V1(pg_flush_database_buffers);
 PG_FUNCTION_INFO_V1(pg_mark_tablespace_buffers_dirty);
 PG_FUNCTION_INFO_V1(pg_flush_tablespace_buffers);
 
-
 PG_FUNCTION_INFO_V1(pg_show_relation_buffers);
+
 PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
 
 /*
@@ -52,17 +119,8 @@ PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
  * 
  * BCT_FLUSH - Flush postgres object
  */
-#ifndef BCT_MARK_DIRTY
-	#define BCT_MARK_DIRTY MarkBufferDirty
-#else
-	Assert(false);
-#endif 
-
-#ifndef BCT_FLUSH
-	#define BCT_FLUSH FlushOneBuffer
-#else
-	Assert(false);
-#endif
+#define BCT_MARK_DIRTY MarkBufferDirty
+#define BCT_FLUSH FlushOneBuffer
 
 /*-------------------------------------------------------------------------
  * 								Headers 
@@ -128,7 +186,7 @@ pg_one_buffer_handler(Buffer bufNum, void (* BufferFunc)(Buffer buffer))
 				errmsg("buffer %d does not exist", bufNum)));
 
 	LockBuffer(bufNum, BUFFER_LOCK_EXCLUSIVE);
-	BufferFunc(bufNum);
+	(*BufferFunc) (bufNum);
 	LockBuffer(bufNum, BUFFER_LOCK_UNLOCK);
 }
 
@@ -139,14 +197,15 @@ void
 pg_relation_fork_buffers_handler(text *relName, text *forkName, 
 								void (* BufferFunc)(Buffer buffer))
 {
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
 
-	Relation rel;
-	RangeVar *relrv;
-	ForkNumber forkNum; 
+	Relation 	rel;
+	RangeVar 	*relrv;
+	ForkNumber 	forkNum; 
 
+	/* Open relation */
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
@@ -160,12 +219,12 @@ pg_relation_fork_buffers_handler(text *relName, text *forkName,
 		bufHdr = GetBufferDescriptor(i - 1);
 		bufState = LockBufHdr(bufHdr);
 
-		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator) &&
-			bufHdr->tag.forkNum == forkNum)
+		if (BCT_IS_BUFFER_BELONGS_RELATION(bufHdr, rel) && 
+			BCT_IS_BUFFER_BELONGS_FORK(bufHdr, forkNum))
 		{
 			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
 			UnlockBufHdr(bufHdr, bufState);
-			BufferFunc(i);
+			(*BufferFunc) (i);
 			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
 		}
 		else
@@ -174,6 +233,7 @@ pg_relation_fork_buffers_handler(text *relName, text *forkName,
 		}
 	}
 
+	/* Close relation */
 	relation_close(rel, AccessExclusiveLock);
 }
 
@@ -183,13 +243,14 @@ pg_relation_fork_buffers_handler(text *relName, text *forkName,
 void
 pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer))
 {
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
 
 	Relation rel;
 	RangeVar *relrv;
 
+	/* Open relation */
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
@@ -201,11 +262,11 @@ pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer))
 		bufHdr = GetBufferDescriptor(i - 1);
 		bufState = LockBufHdr(bufHdr);
 
-		if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator))
+		if (BCT_IS_BUFFER_BELONGS_RELATION(bufHdr, rel))
 		{
 			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
 			UnlockBufHdr(bufHdr, bufState);
-			BufferFunc(i);
+			(*BufferFunc) (i);
 			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
 		}
 		else 
@@ -214,6 +275,7 @@ pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer))
 		}
 	}
 
+	/* Close relation */
 	relation_close(rel, AccessExclusiveLock);
 }
 
@@ -223,9 +285,9 @@ pg_relation_buffers_handler(text *relName, void (* BufferFunc)(Buffer buffer))
 void
 pg_database_buffers_handler(Oid dbOid, void (* BufferFunc)(Buffer buffer))
 {
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
 
 	/* Iterate over all non-local buffers */
 	for (i = 1; i <= NBuffers; i++)
@@ -233,11 +295,11 @@ pg_database_buffers_handler(Oid dbOid, void (* BufferFunc)(Buffer buffer))
 		bufHdr = GetBufferDescriptor(i - 1);
 		bufState = LockBufHdr(bufHdr);
 
-		if (bufHdr->tag.dbOid == dbOid)
+		if (BCT_IS_BUFFER_BELONGS_DATABASE(bufHdr, dbOid))
 		{
 			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
 			UnlockBufHdr(bufHdr, bufState);
-			BufferFunc(i);
+			(*BufferFunc) (i);
 			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
 		}
 		else
@@ -253,9 +315,9 @@ pg_database_buffers_handler(Oid dbOid, void (* BufferFunc)(Buffer buffer))
 void
 pg_tablespace_buffers_handler(Oid spcOid, void (* BufferFunc)(Buffer buffer))
 {
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
 
 	/* Iterate over all non-local buffers */
 	for (i = 1; i <= NBuffers; i++)
@@ -263,11 +325,11 @@ pg_tablespace_buffers_handler(Oid spcOid, void (* BufferFunc)(Buffer buffer))
 		bufHdr = GetBufferDescriptor(i - 1);
 		bufState = LockBufHdr(bufHdr);
 
-		if (bufHdr->tag.spcOid == spcOid)
+		if (BCT_IS_BUFFER_BELONGS_TABLESPACE(bufHdr, spcOid))
 		{
 			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
 			UnlockBufHdr(bufHdr, bufState);
-			BufferFunc(i);
+			(*BufferFunc) (i);
 			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
 		}
 		else
@@ -452,24 +514,38 @@ pg_flush_tablespace_buffers(PG_FUNCTION_ARGS)
 Datum
 pg_show_relation_buffers(PG_FUNCTION_ARGS) 
 {
-	Buffer i;
-	BufferDesc *bufHdr;
-	uint32 bufState;
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
 
 	Relation rel;
 	RangeVar *relrv;
 
 	text *relname = PG_GETARG_TEXT_PP(0);
 
-	TupleDesc tupdesc;
-	ReturnSetInfo *rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
-	Datum	values[6];
-	bool nulls[6] = {0};
+	TupleDesc 		tupdesc;
+	ReturnSetInfo 	*rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
+	Tuplestorestate *tupstore;
+	Datum			values[6];
+	bool 			nulls[6] = {0};
+
+	MemoryContext per_query_ctx;
+	MemoryContext oldcontext;
 
 	pg_superuser_check();
 
-	InitMaterializedSRF(fcinfo, 0);
+	per_query_ctx = rsinfo->econtext->ecxt_per_query_memory;
+	oldcontext = MemoryContextSwitchTo(per_query_ctx);
 
+	/* get the requested return tuple description */
+	tupdesc = CreateTupleDescCopy(rsinfo->expectedDesc);
+
+	/* let the caller know we're sending back a tuplestore */
+	rsinfo->returnMode = SFRM_Materialize;
+
+	tupstore = tuplestore_begin_heap(true, false, work_mem);
+
+	/* Open relation */
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relname));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
@@ -485,11 +561,10 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 		for (i = 0; i < NLocBuffer; i++)
 		{
 			bufHdr = GetLocalBufferDescriptor(i);
-
 			bufState = LockBufHdr(bufHdr);
-			if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator))
-			{
 
+			if (BCT_IS_BUFFER_BELONGS_RELATION(bufHdr, rel))
+			{
 				values[0] = (Datum) bufHdr->tag.blockNum;
 				values[1] = (Datum) BufferDescriptorGetBuffer(bufHdr);
 				values[2] = BoolGetDatum((bool) (bufState & BM_DIRTY));
@@ -498,9 +573,9 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 				values[5] = CStringGetTextDatum(forkNames[bufHdr->tag.forkNum]);	
 
 				if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
-						elog(ERROR, "return type must be a row type");
+					elog(ERROR, "return type must be a row type");
 				
-				tuplestore_putvalues(rsinfo->setResult, rsinfo->setDesc, values, nulls);
+				tuplestore_putvalues(tupstore, tupdesc, values, nulls);
 			}
 
 			UnlockBufHdr(bufHdr, bufState);
@@ -508,15 +583,18 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 	}
 	else
 	{
+		/*  
+		 * Show non-temporary table buffers
+		 */
+
 		/* Iterate over all non-local buffers */
 		for (i = 0; i < NBuffers; i++)
 		{
 			bufHdr = GetBufferDescriptor(i);
-
 			bufState = LockBufHdr(bufHdr);
-			if (BufTagMatchesRelFileLocator(&bufHdr->tag, &rel->rd_locator))
-			{
 
+			if (BCT_IS_BUFFER_BELONGS_RELATION(bufHdr, rel))
+			{
 				values[0] = (Datum) bufHdr->tag.blockNum;
 				values[1] = (Datum) BufferDescriptorGetBuffer(bufHdr);
 				values[2] = BoolGetDatum((bool) (bufState & BM_DIRTY));
@@ -527,13 +605,34 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
 				if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 						elog(ERROR, "return type must be a row type");
 				
-				tuplestore_putvalues(rsinfo->setResult, rsinfo->setDesc, values, nulls);
+				tuplestore_putvalues(tupstore, tupdesc, values, nulls);
 			}
 
 			UnlockBufHdr(bufHdr, bufState);
 		}
 	}
 
+	/*
+	 * no longer need the tuple descriptor reference created by
+	 * TupleDescGetAttInMetadata()
+	 */
+	ReleaseTupleDesc(tupdesc);
+
+	tuplestore_donestoring(tupstore);
+	rsinfo->setResult = tupstore;
+
+	/*
+	 * SFRM_Materialize mode expects us to return a NULL Datum. The actual
+	 * tuples are in our tuplestore and passed back through rsinfo->setResult.
+	 * rsinfo->setDesc is set to the tuple description that we actually used
+	 * to build our tuples with, so the caller can verify we did what it was
+	 * expecting.
+	 */
+	rsinfo->setDesc = tupdesc;
+
+	MemoryContextSwitchTo(oldcontext);
+
+	/* Close relation*/
 	relation_close(rel, AccessExclusiveLock);
 
 	PG_RETURN_BOOL(true);
@@ -548,14 +647,16 @@ pg_read_page_into_buffer(PG_FUNCTION_ARGS)
 	text *relName = PG_GETARG_TEXT_PP(0);
 	text *forkName = PG_GETARG_TEXT_PP(1);
 	BlockNumber blockNum = PG_GETARG_INT32(2);
-	ForkNumber forkNum; 
-	Buffer	readBuf;	
+
+	ForkNumber 	forkNum; 
+	Buffer		readBuf;	
 
 	Relation rel;
 	RangeVar *relrv;
 
 	pg_superuser_check();
 
+	/* Open relation */
 	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
 	rel = relation_openrv(relrv, AccessExclusiveLock);
 
@@ -572,8 +673,10 @@ pg_read_page_into_buffer(PG_FUNCTION_ARGS)
 
 	readBuf = ReadBufferExtended(rel, forkNum, blockNum, RBM_NORMAL, NULL);
 
+	/* After the ReadBuffer function we need to release the buffer*/
 	ReleaseBuffer(readBuf);
 
+	/* Close relation*/
 	relation_close(rel, AccessExclusiveLock);
 
 	PG_RETURN_INT32((int32) readBuf);

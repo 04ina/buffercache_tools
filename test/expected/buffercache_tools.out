@@ -14,7 +14,7 @@ CREATE TABLE test_table_1(col integer)
 INSERT INTO test_table_1 
     SELECT 1 FROM generate_series(1,1000); 
 CREATE VIEW tt_1 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_1') 
         ORDER BY fork, blocknumber; 
 CREATE TABLE test_table_2(col integer) 
@@ -23,7 +23,7 @@ CREATE TABLE test_table_2(col integer)
 INSERT INTO test_table_2 
     SELECT 1 FROM generate_series(1,1000); 
 CREATE VIEW tt_2 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_2') 
         ORDER BY fork, blocknumber; 
 \c test_database_2 \\
@@ -34,7 +34,7 @@ CREATE TABLE test_table_3(col integer)
 INSERT INTO test_table_3 
     SELECT 1 FROM generate_series(1,1000); 
 CREATE VIEW tt_3 AS 
-    SELECT blocknumber, dirty, usagecount, pinning, fork 
+    SELECT blocknumber, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_3') 
         ORDER BY fork, blocknumber; 
 VACUUM;
@@ -46,17 +46,17 @@ CHECKPOINT;
 -- Check pg_mark_buffer_dirty() and pg_flush_buffer()
 --
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT pg_mark_buffer_dirty(
@@ -73,17 +73,17 @@ SELECT pg_mark_buffer_dirty(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | t     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | t     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT pg_flush_buffer(
@@ -100,34 +100,34 @@ SELECT pg_flush_buffer(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 -- 
 -- Check pg_mark_relation_fork_buffers_dirty() and pg_flush_relation_fork_buffers()
 --
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT pg_mark_relation_fork_buffers_dirty('test_table_1', 'main');
@@ -137,17 +137,17 @@ SELECT pg_mark_relation_fork_buffers_dirty('test_table_1', 'main');
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | t     |          5 |       0 | main
-           1 | t     |          5 |       0 | main
-           2 | t     |          5 |       0 | main
-           3 | t     |          5 |       0 | main
-           4 | t     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | t     |       0 | main
+           1 | t     |       0 | main
+           2 | t     |       0 | main
+           3 | t     |       0 | main
+           4 | t     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT pg_flush_relation_fork_buffers('test_table_1', 'main');
@@ -157,34 +157,34 @@ SELECT pg_flush_relation_fork_buffers('test_table_1', 'main');
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 -- 
 -- Check pg_mark_relation_buffers_dirty() and pg_flush_relation_buffers()
 --
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT pg_mark_relation_buffers_dirty('test_table_1');
@@ -194,17 +194,17 @@ SELECT pg_mark_relation_buffers_dirty('test_table_1');
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | t     |          5 |       0 | fsm
-           1 | t     |          2 |       0 | fsm
-           2 | t     |          5 |       0 | fsm
-           0 | t     |          5 |       0 | main
-           1 | t     |          5 |       0 | main
-           2 | t     |          5 |       0 | main
-           3 | t     |          5 |       0 | main
-           4 | t     |          5 |       0 | main
-           0 | t     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | t     |       0 | fsm
+           1 | t     |       0 | fsm
+           2 | t     |       0 | fsm
+           0 | t     |       0 | main
+           1 | t     |       0 | main
+           2 | t     |       0 | main
+           3 | t     |       0 | main
+           4 | t     |       0 | main
+           0 | t     |       0 | vm
 (9 rows)
 
 SELECT pg_flush_relation_buffers('test_table_1');
@@ -214,63 +214,63 @@ SELECT pg_flush_relation_buffers('test_table_1');
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 -- 
 -- Check pg_mark_database_buffers_dirty() and pg_flush_database_buffers()
 --
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
@@ -287,46 +287,46 @@ SELECT pg_mark_database_buffers_dirty(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | t     |          5 |       0 | fsm
-           1 | t     |          2 |       0 | fsm
-           2 | t     |          5 |       0 | fsm
-           0 | t     |          5 |       0 | main
-           1 | t     |          5 |       0 | main
-           2 | t     |          5 |       0 | main
-           3 | t     |          5 |       0 | main
-           4 | t     |          5 |       0 | main
-           0 | t     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | t     |       0 | fsm
+           1 | t     |       0 | fsm
+           2 | t     |       0 | fsm
+           0 | t     |       0 | main
+           1 | t     |       0 | main
+           2 | t     |       0 | main
+           3 | t     |       0 | main
+           4 | t     |       0 | main
+           0 | t     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | t     |          5 |       0 | fsm
-           1 | t     |          2 |       0 | fsm
-           2 | t     |          5 |       0 | fsm
-           0 | t     |          5 |       0 | main
-           1 | t     |          5 |       0 | main
-           2 | t     |          5 |       0 | main
-           3 | t     |          5 |       0 | main
-           4 | t     |          5 |       0 | main
-           0 | t     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | t     |       0 | fsm
+           1 | t     |       0 | fsm
+           2 | t     |       0 | fsm
+           0 | t     |       0 | main
+           1 | t     |       0 | main
+           2 | t     |       0 | main
+           3 | t     |       0 | main
+           4 | t     |       0 | main
+           0 | t     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
@@ -343,46 +343,46 @@ SELECT pg_flush_database_buffers(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
@@ -390,46 +390,46 @@ SELECT * FROM tt_3;
 -- Check pg_mark_tablespace_buffers_dirty() and pg_flush_tablespace_buffers()
 --
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
@@ -446,46 +446,46 @@ SELECT pg_mark_tablespace_buffers_dirty(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | t     |          5 |       0 | fsm
-           1 | t     |          2 |       0 | fsm
-           2 | t     |          5 |       0 | fsm
-           0 | t     |          5 |       0 | main
-           1 | t     |          5 |       0 | main
-           2 | t     |          5 |       0 | main
-           3 | t     |          5 |       0 | main
-           4 | t     |          5 |       0 | main
-           0 | t     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | t     |       0 | fsm
+           1 | t     |       0 | fsm
+           2 | t     |       0 | fsm
+           0 | t     |       0 | main
+           1 | t     |       0 | main
+           2 | t     |       0 | main
+           3 | t     |       0 | main
+           4 | t     |       0 | main
+           0 | t     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
@@ -502,46 +502,46 @@ SELECT pg_flush_tablespace_buffers(
 (1 row)
 
 SELECT * FROM tt_1;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 SELECT * FROM tt_2;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_2 \\
 SELECT * FROM tt_3;
- blocknumber | dirty | usagecount | pinning | fork 
--------------+-------+------------+---------+------
-           0 | f     |          5 |       0 | fsm
-           1 | f     |          2 |       0 | fsm
-           2 | f     |          5 |       0 | fsm
-           0 | f     |          5 |       0 | main
-           1 | f     |          5 |       0 | main
-           2 | f     |          5 |       0 | main
-           3 | f     |          5 |       0 | main
-           4 | f     |          5 |       0 | main
-           0 | f     |          2 |       0 | vm
+ blocknumber | dirty | pinning | fork 
+-------------+-------+---------+------
+           0 | f     |       0 | fsm
+           1 | f     |       0 | fsm
+           2 | f     |       0 | fsm
+           0 | f     |       0 | main
+           1 | f     |       0 | main
+           2 | f     |       0 | main
+           3 | f     |       0 | main
+           4 | f     |       0 | main
+           0 | f     |       0 | vm
 (9 rows)
 
 \c test_database_1 \\
