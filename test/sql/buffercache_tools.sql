@@ -20,7 +20,7 @@ INSERT INTO test_table_1
 
 CREATE VIEW tt_1 AS 
     SELECT blocknumber, dirty, pinning, fork 
-        FROM pg_show_relation_buffers('test_table_1') 
+        FROM pg_show_relation_buf('test_table_1') 
         ORDER BY fork, blocknumber; 
 
 CREATE TABLE test_table_2(col integer) 
@@ -31,7 +31,7 @@ INSERT INTO test_table_2
 
 CREATE VIEW tt_2 AS 
     SELECT blocknumber, dirty, pinning, fork 
-        FROM pg_show_relation_buffers('test_table_2') 
+        FROM pg_show_relation_buf('test_table_2') 
         ORDER BY fork, blocknumber; 
 
 \c test_database_2 \\
@@ -45,7 +45,7 @@ INSERT INTO test_table_3
 
 CREATE VIEW tt_3 AS 
     SELECT blocknumber, dirty, pinning, fork 
-        FROM pg_show_relation_buffers('test_table_3') 
+        FROM pg_show_relation_buf('test_table_3') 
         ORDER BY fork, blocknumber; 
 VACUUM;
 CHECKPOINT;
@@ -56,22 +56,22 @@ VACUUM;
 CHECKPOINT;
 
 -- 
--- Check pg_mark_buffer_dirty() and pg_flush_buffer()
+-- Check pg_mark_dirty_buf() and pg_flush_buf()
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_buffer_dirty(
+SELECT pg_mark_dirty_buf(
     ( 
         SELECT buffernumber 
-            FROM pg_show_relation_buffers('test_table_1') 
+            FROM pg_show_relation_buf('test_table_1') 
             ORDER BY fork, blocknumber
             LIMIT 1
     )::integer
 );
 SELECT * FROM tt_1;
-SELECT pg_flush_buffer(
+SELECT pg_flush_buf(
     ( 
         SELECT buffernumber 
-            FROM pg_show_relation_buffers('test_table_1') 
+            FROM pg_show_relation_buf('test_table_1') 
             ORDER BY fork, blocknumber 
             LIMIT 1
     )::integer
@@ -79,25 +79,25 @@ SELECT pg_flush_buffer(
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_relation_fork_buffers_dirty() and pg_flush_relation_fork_buffers()
+-- Check pg_mark_dirty_relation_fork_buf() and pg_flush_relation_fork_buf()
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_relation_fork_buffers_dirty('test_table_1', 'main');
+SELECT pg_mark_dirty_relation_fork_buf('test_table_1', 'main');
 SELECT * FROM tt_1;
-SELECT pg_flush_relation_fork_buffers('test_table_1', 'main');
+SELECT pg_flush_relation_fork_buf('test_table_1', 'main');
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_relation_buffers_dirty() and pg_flush_relation_buffers()
+-- Check pg_mark_dirty_relation_buf() and pg_flush_relation_buf()
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_relation_buffers_dirty('test_table_1');
+SELECT pg_mark_dirty_relation_buf('test_table_1');
 SELECT * FROM tt_1;
-SELECT pg_flush_relation_buffers('test_table_1');
+SELECT pg_flush_relation_buf('test_table_1');
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_database_buffers_dirty() and pg_flush_database_buffers()
+-- Check pg_mark_dirty_database_buf() and pg_flush_database_buf()
 --
 SELECT * FROM tt_1;
 SELECT * FROM tt_2;
@@ -105,7 +105,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_mark_database_buffers_dirty(
+SELECT pg_mark_dirty_database_buf(
     (
         SELECT oid 
             FROM pg_database 
@@ -119,7 +119,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_flush_database_buffers(
+SELECT pg_flush_database_buf(
     (
         SELECT oid 
             FROM pg_database 
@@ -134,7 +134,7 @@ SELECT * FROM tt_3;
 \c test_database_1 \\
 
 -- 
--- Check pg_mark_tablespace_buffers_dirty() and pg_flush_tablespace_buffers()
+-- Check pg_mark_dirty_tablespace_buf() and pg_flush_tablespace_buf()
 --
 SELECT * FROM tt_1;
 SELECT * FROM tt_2;
@@ -142,7 +142,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_mark_tablespace_buffers_dirty(
+SELECT pg_mark_dirty_tablespace_buf(
     (
         SELECT oid 
             FROM pg_tablespace 
@@ -156,7 +156,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_flush_tablespace_buffers(
+SELECT pg_flush_tablespace_buf(
     (
         SELECT oid 
             FROM pg_tablespace 
@@ -171,11 +171,11 @@ SELECT * FROM tt_3;
 \c test_database_1 \\
 
 -- 
--- Check pg_read_page_into_buffer()
+-- Check pg_read_page_into_buf()
 --
 SELECT (
-    (SELECT pg_read_page_into_buffer('test_table_1', 'main', 0)) = 
-    (SELECT buffernumber FROM pg_show_relation_buffers('test_table_1') 
+    (SELECT pg_read_page_into_buf('test_table_1', 'main', 0)) = 
+    (SELECT buffernumber FROM pg_show_relation_buf('test_table_1') 
         WHERE blocknumber = 0 AND fork = 'main')
 );
 
