@@ -4,102 +4,102 @@
 \echo Use "CREATE EXTENSION buffercache_tools" to load this file. \quit
 
 --
--- pg_mark_buffer_dirty()
+-- pg_mark_dirty_buf()
 --
-CREATE FUNCTION pg_mark_buffer_dirty(
+CREATE FUNCTION pg_mark_dirty_buf(
     IN buffer integer)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_mark_buffer_dirty'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_flush_buffer()
+-- pg_flush_buf()
 --
-CREATE FUNCTION pg_flush_buffer(
+CREATE FUNCTION pg_flush_buf(
     IN buffer integer)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_buffer'
+AS 'MODULE_PATHNAME', 'pg_flush_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_mark_relation_fork_buffers_dirty()
+-- pg_mark_dirty_relation_fork_buf()
 --
-CREATE FUNCTION pg_mark_relation_fork_buffers_dirty(
+CREATE FUNCTION pg_mark_dirty_relation_fork_buf(
     IN relname text, 
     IN fork text)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_mark_relation_fork_buffers_dirty'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_relation_fork_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_flush_relation_fork_buffers()
+-- pg_flush_relation_fork_buf()
 --
-CREATE FUNCTION pg_flush_relation_fork_buffers(
+CREATE FUNCTION pg_flush_relation_fork_buf(
     IN relname text, 
     IN fork text)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_relation_fork_buffers'
+AS 'MODULE_PATHNAME', 'pg_flush_relation_fork_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_mark_relation_buffers_dirty()
+-- pg_mark_dirty_relation_buf()
 --
-CREATE FUNCTION pg_mark_relation_buffers_dirty(
+CREATE FUNCTION pg_mark_dirty_relation_buf(
     IN relname text)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_mark_relation_buffers_dirty'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_relation_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_flush_relation_buffers()
+-- pg_flush_relation_buf()
 --
-CREATE FUNCTION pg_flush_relation_buffers(
+CREATE FUNCTION pg_flush_relation_buf(
     IN relname text)
 RETURNS bool 
-AS 'MODULE_PATHNAME', 'pg_flush_relation_buffers'
+AS 'MODULE_PATHNAME', 'pg_flush_relation_buf'
 LANGUAGE C STRICT;
 
 
 --
--- pg_mark_database_buffers_dirty()
+-- pg_mark_dirty_database_buf()
 --
-CREATE FUNCTION pg_mark_database_buffers_dirty(
+CREATE FUNCTION pg_mark_dirty_database_buf(
     IN dboid oid)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_mark_database_buffers_dirty'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_database_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_flush_database_buffers()
+-- pg_flush_database_buf()
 --
-CREATE FUNCTION pg_flush_database_buffers(
+CREATE FUNCTION pg_flush_database_buf(
     IN dboid oid)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_flush_database_buffers'
+AS 'MODULE_PATHNAME', 'pg_flush_database_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_mark_tablespace_buffers_dirty()
+-- pg_mark_dirty_tablespace_buffers()
 --
-CREATE FUNCTION pg_mark_tablespace_buffers_dirty(
+CREATE FUNCTION pg_mark_dirty_tablespace_buffers(
     IN dboid oid)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_mark_tablespace_buffers_dirty'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_tablespace_buffers'
 LANGUAGE C STRICT;
 
 --
--- pg_flush_tablespace_buffers()
+-- pg_flush_tablespace_buf()
 --
-CREATE FUNCTION pg_flush_tablespace_buffers(
+CREATE FUNCTION pg_flush_tablespace_buf(
     IN spcoid oid)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_flush_tablespace_buffers'
+AS 'MODULE_PATHNAME', 'pg_flush_tablespace_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_show_relation_buffers()
+-- pg_show_relation_buf()
 --
-CREATE FUNCTION pg_show_relation_buffers(IN relname text,
+CREATE FUNCTION pg_show_relation_buf(IN relname text,
     OUT blocknumber integer,
     OUT buffernumber integer,
     OUT dirty bool,
@@ -107,13 +107,13 @@ CREATE FUNCTION pg_show_relation_buffers(IN relname text,
     OUT pinning integer,
     OUT fork text)
 RETURNS SETOF RECORD
-AS 'MODULE_PATHNAME', 'pg_show_relation_buffers'
+AS 'MODULE_PATHNAME', 'pg_show_relation_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_read_page_into_buffer()
+-- pg_read_page_into_buf()
 --
-CREATE FUNCTION pg_read_page_into_buffer(
+CREATE FUNCTION pg_read_page_into_buf(
     IN relname text, 
     IN fork text, 
     IN BluckNumber integer) 
