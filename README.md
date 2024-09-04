@@ -42,10 +42,10 @@ ninja install
 There are 12 functions for working with the buffer cache.  
 
 Information about temporary table buffers can only be viewed, but not changed.
-### pg_show_relation_buffers(relname text) 
+### pg_show_relation_buf(relname text) 
 Show buffers from the buffer cache that belong to a specific relation.  
 ```sql
-SELECT * FROM pg_show_relation_buffers('test_table');
+SELECT * FROM pg_show_relation_buf('test_table');
  blocknumber | buffernumber | dirty | usagecount | pinning | fork 
 -------------+--------------+-------+------------+---------+------
            4 |         5076 | t     |          5 |       0 | main
@@ -59,7 +59,7 @@ SELECT * FROM pg_show_relation_buffers('test_table');
 ```
 The standard pg_buffercache extension also has a function for displaying information about buffers in the buffer cache, but pg_show_relation_buffers() will also let you see information about local buffers of temporary tables that exist only in the current session.
 ```sql
-SELECT * FROM pg_show_relation_buffers('test_temp_table');
+SELECT * FROM pg_show_relation_buf('test_temp_table');
  blocknumber | buffernumber | dirty | usagecount | pinning | fork 
 -------------+--------------+-------+------------+---------+------
            0 |           -1 | t     |          3 |       0 | main
@@ -68,91 +68,91 @@ SELECT * FROM pg_show_relation_buffers('test_temp_table');
            1 |           -4 | t     |          2 |       0 | fsm
            2 |           -5 | t     |          2 |       0 | fsm
 ```
-### pg_mark_buffer_dirty(buffer integer)
+### pg_mark_dirty_buf(buffer integer)
 Mark buffer dirty.
 ```sql
-SELECT pg_mark_buffer_dirty(5076);
- pg_mark_buffer_dirty 
-----------------------
+SELECT pg_mark_dirty_buf(5076);
+ pg_mark_dirty_buf 
+-------------------
  t
 ```
-### pg_flush_buffer(buffer integer)
+### pg_flush_buf(buffer integer)
 Write (flush) buffer page to disk without drop.
 ```sql
-SELECT pg_flush_buffer(5076);
- pg_flush_buffer 
------------------
+SELECT pg_flush_buf(5076);
+ pg_flush_buf 
+--------------
  t
 ```
-### pg_mark_relation_fork_buffers_dirty(relname text, fork text)
+### pg_mark_dirty_relation_fork_buf(relname text, fork text)
 Mark relation buffer pages dirty of a specific fork. 
 ```sql
-SELECT * FROM pg_mark_relation_fork_buffers_dirty('test_table', 'main');
- pg_mark_relation_fork_buffers_dirty 
--------------------------------------
+SELECT * FROM pg_mark_dirty_relation_fork_buf('test_table', 'main');
+ pg_mark_dirty_relation_fork_buf 
+---------------------------------
  t
 ```
-### pg_flush_relation_fork_buffers(relname text, fork text)
+### pg_flush_relation_fork_buf(relname text, fork text)
 Write relation buffer pages of a specific fork to disk without drop.
 ```sql
-SELECT * FROM pg_flush_relation_fork_buffers('test_table', 'main');
- pg_flush_relation_fork_buffers 
+SELECT * FROM pg_flush_relation_fork_buf('test_table', 'main');
+ pg_flush_relation_fork_buf 
 --------------------------------
  t
 ```
-### pg_mark_relation_buffers_dirty(relname text)
+### pg_mark_dirty_relation_buf(relname text)
 Mark relation buffer pages dirty.
 ```sql
-SELECT * FROM pg_mark_relation_buffers_dirty('test_table');
- pg_mark_relation_buffers_dirty 
---------------------------------
+SELECT * FROM pg_mark_dirty_relation_buf('test_table');
+ pg_mark_dirty_relation_buf 
+----------------------------
  t
 ```
-### pg_flush_relation_buffers(relname text)
+### pg_flush_relation_buf(relname text)
 Write relation buffer pages to disk without drop.
 ```sql
-SELECT * FROM pg_flush_relation_buffers('test_table');
- pg_flush_relation_buffers 
----------------------------
+SELECT * FROM pg_flush_relation_buf('test_table');
+ pg_flush_relation_buf 
+-----------------------
  t
 ```
-### pg_mark_database_buffers_dirty(dboid oid)
+### pg_mark_dirty_database_buf(dboid oid)
 Mark all database buffer pages dirty.
 ```sql
-SELECT * FROM pg_mark_database_buffers_dirty(4);
- pg_mark_database_buffers_dirty 
---------------------------------
+SELECT * FROM pg_mark_dirty_database_buf(4);
+ pg_mark_dirty_database_buf 
+----------------------------
  t
 ```
-### pg_flush_database_buffers(dboid oid)
+### pg_flush_database_buf(dboid oid)
 Write all database buffer pages to disk without drop.
 ```sql
-SELECT * FROM pg_flush_database_buffers(4);
- pg_flush_database_buffers 
----------------------------
+SELECT * FROM pg_flush_database_buf(4);
+ pg_flush_database_buf 
+-----------------------
  t
 ```
-### pg_mark_tablespace_buffers_dirty(spcoid oid)
+### pg_mark_dirty_tablespace_buf(spcoid oid)
 Mark all tablespace buffer pages drity. 
 ```sql
-SELECT * FROM pg_mark_tablespace_buffers_dirty(1456);
- pg_mark_tablespace_buffers_dirty 
-----------------------------------
+SELECT * FROM pg_mark_dirty_tablespace_buf(1456);
+ pg_mark_dirty_tablespace_buf 
+------------------------------
  t
 ```
-### pg_flush_tablespace_buffers(spcoid oid)
+### pg_flush_tablespace_buf(spcoid oid)
 Write all tablespace buffer pages to disk without drop.
 ```sql
-SELECT * FROM pg_flush_tablespace_buffers(1456);
- pg_flush_tablespace_buffers 
------------------------------
+SELECT * FROM pg_flush_tablespace_buf(1456);
+ pg_flush_tablespace_buf 
+-------------------------
  t
 ```
-### pg_read_page_into_buffer(relname text, fork text, blocknumber integer)
+### pg_read_page_into_buf(relname text, fork text, blocknumber integer)
 Read a specific page of a specific relation into the buffer cache. Returns the number of the filled buffer.
 ```sql
-SELECT pg_read_page_into_buffer('test', 'main', 0);
- pg_read_page_into_buffer 
+SELECT pg_read_page_into_buf('test', 'main', 0);
+ pg_read_page_into_buf 
 --------------------------
                      5074
 ```
