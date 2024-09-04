@@ -93,24 +93,24 @@
 
 PG_MODULE_MAGIC;
 
-PG_FUNCTION_INFO_V1(pg_mark_buffer_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_buffer);
+PG_FUNCTION_INFO_V1(pg_mark_dirty_buf);
+PG_FUNCTION_INFO_V1(pg_flush_buf);
 
-PG_FUNCTION_INFO_V1(pg_mark_relation_fork_buffers_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_relation_fork_buffers);
+PG_FUNCTION_INFO_V1(pg_mark_dirty_relation_fork_buf);
+PG_FUNCTION_INFO_V1(pg_flush_relation_fork_buf);
 
-PG_FUNCTION_INFO_V1(pg_mark_relation_buffers_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_relation_buffers);
+PG_FUNCTION_INFO_V1(pg_mark_dirty_relation_buf);
+PG_FUNCTION_INFO_V1(pg_flush_relation_buf);
 
-PG_FUNCTION_INFO_V1(pg_mark_database_buffers_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_database_buffers);
+PG_FUNCTION_INFO_V1(pg_mark_dirty_database_buf);
+PG_FUNCTION_INFO_V1(pg_flush_database_buf);
 
-PG_FUNCTION_INFO_V1(pg_mark_tablespace_buffers_dirty);
-PG_FUNCTION_INFO_V1(pg_flush_tablespace_buffers);
+PG_FUNCTION_INFO_V1(pg_mark_dirty_tablespace_buf);
+PG_FUNCTION_INFO_V1(pg_flush_tablespace_buf);
 
-PG_FUNCTION_INFO_V1(pg_show_relation_buffers);
+PG_FUNCTION_INFO_V1(pg_show_relation_buf);
 
-PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
+PG_FUNCTION_INFO_V1(pg_read_page_into_buf);
 
 /*
  * Macroses for the last argument of handler functions.
@@ -348,7 +348,7 @@ pg_tablespace_buffers_handler(Oid spcOid, void (* BufferFunc)(Buffer buffer))
  * Mark buffer dirty
  */
 Datum
-pg_mark_buffer_dirty(PG_FUNCTION_ARGS)
+pg_mark_dirty_buf(PG_FUNCTION_ARGS)
 {
 	Buffer	bufNum = PG_GETARG_INT32(0);
 
@@ -363,7 +363,7 @@ pg_mark_buffer_dirty(PG_FUNCTION_ARGS)
  * Write (flush) buffer page to disk without drop
  */
 Datum
-pg_flush_buffer(PG_FUNCTION_ARGS)
+pg_flush_buf(PG_FUNCTION_ARGS)
 {
 	Buffer	bufNum = PG_GETARG_INT32(0);
 
@@ -378,7 +378,7 @@ pg_flush_buffer(PG_FUNCTION_ARGS)
  * Mark relation buffer pages dirty of a specific fork 
  */
 Datum
-pg_mark_relation_fork_buffers_dirty(PG_FUNCTION_ARGS) 
+pg_mark_dirty_relation_fork_buf(PG_FUNCTION_ARGS) 
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 	text *forkName = PG_GETARG_TEXT_PP(1);
@@ -395,7 +395,7 @@ pg_mark_relation_fork_buffers_dirty(PG_FUNCTION_ARGS)
  * to disk without drop
  */
 Datum
-pg_flush_relation_fork_buffers(PG_FUNCTION_ARGS) 
+pg_flush_relation_fork_buf(PG_FUNCTION_ARGS) 
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 	text *forkName = PG_GETARG_TEXT_PP(1);
@@ -411,7 +411,7 @@ pg_flush_relation_fork_buffers(PG_FUNCTION_ARGS)
  * Mark relation buffer pages dirty  
  */
 Datum
-pg_mark_relation_buffers_dirty(PG_FUNCTION_ARGS) 
+pg_mark_dirty_relation_buf(PG_FUNCTION_ARGS) 
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 
@@ -426,7 +426,7 @@ pg_mark_relation_buffers_dirty(PG_FUNCTION_ARGS)
  * Write relation buffer pages to disk without drop 
  */
 Datum
-pg_flush_relation_buffers(PG_FUNCTION_ARGS) 
+pg_flush_relation_buf(PG_FUNCTION_ARGS) 
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 
@@ -441,7 +441,7 @@ pg_flush_relation_buffers(PG_FUNCTION_ARGS)
  * Mark all database buffer pages dirty 
  */
 Datum 
-pg_mark_database_buffers_dirty(PG_FUNCTION_ARGS)
+pg_mark_dirty_database_buf(PG_FUNCTION_ARGS)
 {
 	Oid dbOid = PG_GETARG_OID(0);	
 	
@@ -461,7 +461,7 @@ pg_mark_database_buffers_dirty(PG_FUNCTION_ARGS)
  * Write all database buffer pages to disk without drop 
  */
 Datum 
-pg_flush_database_buffers(PG_FUNCTION_ARGS)
+pg_flush_database_buf(PG_FUNCTION_ARGS)
 {
 	Oid dbOid = PG_GETARG_OID(0);	
 	
@@ -481,7 +481,7 @@ pg_flush_database_buffers(PG_FUNCTION_ARGS)
  * Mark all tablespace buffer pages drity 
  */
 Datum 
-pg_mark_tablespace_buffers_dirty(PG_FUNCTION_ARGS)
+pg_mark_dirty_tablespace_buf(PG_FUNCTION_ARGS)
 {
 	Oid spcOid = PG_GETARG_OID(0);	
 	
@@ -496,7 +496,7 @@ pg_mark_tablespace_buffers_dirty(PG_FUNCTION_ARGS)
  * Write all tablespace buffer pages to disk without drop 
  */
 Datum 
-pg_flush_tablespace_buffers(PG_FUNCTION_ARGS)
+pg_flush_tablespace_buf(PG_FUNCTION_ARGS)
 {
 	Oid spcOid = PG_GETARG_OID(0);	
 	
@@ -512,7 +512,7 @@ pg_flush_tablespace_buffers(PG_FUNCTION_ARGS)
  * a specific relation  
  */
 Datum
-pg_show_relation_buffers(PG_FUNCTION_ARGS) 
+pg_show_relation_buf(PG_FUNCTION_ARGS) 
 {
 	Buffer 		i;
 	BufferDesc 	*bufHdr;
@@ -642,7 +642,7 @@ pg_show_relation_buffers(PG_FUNCTION_ARGS)
  * Read a specific page of a specific relation into the buffer cache
  */
 Datum
-pg_read_page_into_buffer(PG_FUNCTION_ARGS)
+pg_read_page_into_buf(PG_FUNCTION_ARGS)
 {
 	text *relName = PG_GETARG_TEXT_PP(0);
 	text *forkName = PG_GETARG_TEXT_PP(1);
