@@ -153,8 +153,8 @@ Read a specific page of a specific relation into the buffer cache. Returns the n
 ```sql
 SELECT pg_read_page_into_buf('test', 'main', 0);
  pg_read_page_into_buf 
---------------------------
-                     5074
+-----------------------
+5074
 ```
 ## Test suite 
 To run the test suite, execute
