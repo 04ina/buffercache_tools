@@ -79,12 +79,12 @@ AS 'MODULE_PATHNAME', 'pg_flush_database_buf'
 LANGUAGE C STRICT;
 
 --
--- pg_mark_dirty_tablespace_buffers()
+-- pg_mark_dirty_tablespace_buf()
 --
-CREATE FUNCTION pg_mark_dirty_tablespace_buffers(
+CREATE FUNCTION pg_mark_dirty_tablespace_buf(
     IN dboid oid)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pg_mark_dirty_tablespace_buffers'
+AS 'MODULE_PATHNAME', 'pg_mark_dirty_tablespace_buf'
 LANGUAGE C STRICT;
 
 --
@@ -118,5 +118,5 @@ CREATE FUNCTION pg_read_page_into_buf(
     IN fork text, 
     IN BluckNumber integer) 
 RETURNS integer 
-AS 'MODULE_PATHNAME', 'pg_read_page_into_buffer'
+AS 'MODULE_PATHNAME', 'pg_read_page_into_buf'
 LANGUAGE C STRICT;
