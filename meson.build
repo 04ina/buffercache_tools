@@ -11,7 +11,7 @@ includedir_server = run_command(pg_config, '--includedir-server', check: true).s
 pkglibdir = run_command(pg_config, '--pkglibdir', check: true).stdout().strip()
 sharedir = run_command(pg_config, '--sharedir', check: true).stdout().strip()
 
-shared_module('buffercache_tools', 'buffercache_tools.c',
+shared_module('buffercache_tools', 'buffercache_tools.c', 'buffercache_tools_internals.c',
               include_directories: [includedir_server],
               install: true,
               install_dir: pkglibdir,
@@ -27,7 +27,7 @@ pg_regress = find_program('pg_regress',
                           dirs: [pkglibdir / 'pgxs/src/test/regress']
                          )
 
-regress_tests = ['buffercache_tools']
+regress_tests = ['buffer_processing_functions', 'change_func_buffers_coverage', 'read_page_into_buffer']
 
 test('regress',
      pg_regress,

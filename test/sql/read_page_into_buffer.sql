@@ -1,0 +1,25 @@
+--
+-- Preparing
+--
+
+CREATE EXTENSION buffercache_tools;
+
+CREATE TABLE test_table(col integer) 
+    WITH (autovacuum_enabled = off);
+INSERT INTO test_table 
+    SELECT 1 FROM generate_series(1,1000); 
+
+-- 
+-- Check pg_read_page_into_buffer()
+--
+SELECT (
+    (SELECT pg_read_page_into_buffer('test_table', 'main', 0)) = 
+    (SELECT buffernum FROM pg_show_relation_buffers('test_table') 
+        WHERE blocknum = 0 AND fork = 'main')
+);
+
+--
+-- Cleanup
+--
+DROP TABLE test_table;
+

@@ -1,7 +1,7 @@
 # buffercache_tools
 PostgreSQL Extention for buffer cache manipulation.
 
-buffercache_tools allows you to flush and mark dirty buffers of various postgres objects, such as:
+buffercache_tools allows you to change buffers of various postgres objects, such as:
 1. Relation
 2. Relation fork
 3. Database
@@ -39,114 +39,81 @@ cd build
 ninja install
 ```
 ## Usage
-There are 12 functions for working with the buffer cache.  
+### pg_change_*
+There are 5 buffer change functions with different coverages:
+1. pg_change_buffer()
+2. pg_change_relation_fork_buffers()
+3. pg_change_relation_buffers()
+4. pg_change_database_buffers()
+5. pg_change_tablespace_buffers()
 
+#### The arguments of the pg_change_* functions consist of three types of arguments:
+1. Buffer change mode (In the source code it's called "buffer processing function").
+2. The identifier of the object whose buffers need to be modified (for example oid for pg_change_database_buffers()).
+3. Arguments for the corresponding buffer modification mode.
+
+#### Buffer change modes:
+1. mark_dirty - mark buffer dirty. Arguments: not required.
+2. flush - Write buffer page to disk without drop. Arguments: not required.
+4. change_spcoid - change tablespace oid. Arguments: Tablespace Oid.
+5. change_dboid - change database oid. Arguments: Database Oid.
+6. change_relnumber - change relnumber. Arguments: relnumber relations.
+7. change_forknum - change fork number. Arguments: Fork name in text format ('main', 'fsm', 'vm', 'init').
+8. change_blocknum - change block number. Arguments: block number.
+
+#### Examples:
+```sql
+pg_change_buffer('mark_dirty', 400);
+pg_change_buffer('flush', 400);
+pg_change_buffer('change_spcoid', 400, 1253);
+pg_change_buffer('change_dboid', 400, 154);
+pg_change_buffer('change_relnumber', 400, 254);
+pg_change_buffer('change_forknum', 400, 'main');
+pg_change_buffer('change_blocknum', 400, 34252);
+
+pg_change_relation_fork_buffers('change_blocknum', 'test_table', 'main', 34252);
+pg_change_relation_buffers('change_blocknum', 'test_table', 34252);
+pg_change_database_buffers('change_blocknum', 4321, 34252);
+pg_change_tablespace_buffers('change_blocknum', 5421, 34252);
+```
+If the function was executed successfully, the output value will be true.
+```sql
+SELECT * FROM pg_change_relation_fork_buffers('mark_dirty', 'test_table', 'main');
+ pg_change_relation_fork_buffers 
+---------------------------------
+ t
+```
 Information about temporary table buffers can only be viewed, but not changed.
 ### pg_show_relation_buffers(relname text) 
-Show buffers from the buffer cache that belong to a specific relation.  
+Show information about buffers from the buffer cache that belong to a specific relation.  
 ```sql
-SELECT * FROM pg_show_relation_buffers('test_table');
- blocknumber | buffernumber | dirty | usagecount | pinning | fork 
--------------+--------------+-------+------------+---------+------
-           4 |         5076 | t     |          5 |       0 | main
-           3 |         5077 | t     |          5 |       0 | main
-           2 |         5078 | t     |          5 |       0 | main
-           1 |         5079 | t     |          5 |       0 | main
-           2 |         5080 | f     |          4 |       0 | fsm
-           1 |         5081 | f     |          1 |       0 | fsm
-           0 |         5082 | f     |          5 |       0 | fsm
-           0 |         5083 | t     |          5 |       0 | main
+ SELECT * FROM pg_show_relation_buffers('test_table');
+ buffernum | blocknum | dirty | usagecount | pinning | fork 
+-----------+----------+-------+------------+---------+------
+      4487 |        2 | t     |          2 |       0 | fsm
+      4488 |        1 | t     |          2 |       0 | fsm
+      4489 |        0 | t     |          2 |       0 | fsm
+      4490 |        0 | t     |          2 |       0 | vm
+      4491 |        0 | t     |          1 |       0 | main
 ```
 The standard pg_buffercache extension also has a function for displaying information about buffers in the buffer cache, but pg_show_relation_buffers() will also let you see information about local buffers of temporary tables that exist only in the current session.
 ```sql
-SELECT * FROM pg_show_relation_buffers('test_temp_table');
- blocknumber | buffernumber | dirty | usagecount | pinning | fork 
--------------+--------------+-------+------------+---------+------
-           0 |           -1 | t     |          3 |       0 | main
-           0 |           -2 | t     |          2 |       0 | vm
-           0 |           -3 | t     |          2 |       0 | fsm
-           1 |           -4 | t     |          2 |       0 | fsm
-           2 |           -5 | t     |          2 |       0 | fsm
+SELECT * FROM pg_show_relation_buffers('test_table');
+ buffernum | blocknum | dirty | usagecount | pinning | fork 
+-----------+----------+-------+------------+---------+------
+        -1 |        0 | t     |          2 |       0 | main
+        -2 |        0 | t     |          2 |       0 | vm
+        -3 |        0 | t     |          2 |       0 | fsm
+        -4 |        1 | t     |          2 |       0 | fsm
+        -5 |        2 | t     |          2 |       0 | fsm
 ```
-### pg_mark_buffer_dirty(buffer integer)
-Mark buffer dirty.
+### pg_show_buffer(buffer integer)
+Show information about specific buffer from the buffer cache. pg_show_buffer() does not supported local buffers.
 ```sql
-SELECT pg_mark_buffer_dirty(5076);
- pg_mark_buffer_dirty 
-----------------------
- t
-```
-### pg_flush_buffer(buffer integer)
-Write (flush) buffer page to disk without drop.
-```sql
-SELECT pg_flush_buffer(5076);
- pg_flush_buffer 
------------------
- t
-```
-### pg_mark_relation_fork_buffers_dirty(relname text, fork text)
-Mark relation buffer pages dirty of a specific fork. 
-```sql
-SELECT * FROM pg_mark_relation_fork_buffers_dirty('test_table', 'main');
- pg_mark_relation_fork_buffers_dirty 
--------------------------------------
- t
-```
-### pg_flush_relation_fork_buffers(relname text, fork text)
-Write relation buffer pages of a specific fork to disk without drop.
-```sql
-SELECT * FROM pg_flush_relation_fork_buffers('test_table', 'main');
- pg_flush_relation_fork_buffers 
---------------------------------
- t
-```
-### pg_mark_relation_buffers_dirty(relname text)
-Mark relation buffer pages dirty.
-```sql
-SELECT * FROM pg_mark_relation_buffers_dirty('test_table');
- pg_mark_relation_buffers_dirty 
---------------------------------
- t
-```
-### pg_flush_relation_buffers(relname text)
-Write relation buffer pages to disk without drop.
-```sql
-SELECT * FROM pg_flush_relation_buffers('test_table');
- pg_flush_relation_buffers 
----------------------------
- t
-```
-### pg_mark_database_buffers_dirty(dboid oid)
-Mark all database buffer pages dirty.
-```sql
-SELECT * FROM pg_mark_database_buffers_dirty(4);
- pg_mark_database_buffers_dirty 
---------------------------------
- t
-```
-### pg_flush_database_buffers(dboid oid)
-Write all database buffer pages to disk without drop.
-```sql
-SELECT * FROM pg_flush_database_buffers(4);
- pg_flush_database_buffers 
----------------------------
- t
-```
-### pg_mark_tablespace_buffers_dirty(spcoid oid)
-Mark all tablespace buffer pages drity. 
-```sql
-SELECT * FROM pg_mark_tablespace_buffers_dirty(1456);
- pg_mark_tablespace_buffers_dirty 
-----------------------------------
- t
-```
-### pg_flush_tablespace_buffers(spcoid oid)
-Write all tablespace buffer pages to disk without drop.
-```sql
-SELECT * FROM pg_flush_tablespace_buffers(1456);
- pg_flush_tablespace_buffers 
------------------------------
- t
+SELECT * FROM pg_show_buffer(1);
+ blocknum | fork | relnumber | dboid | spcoid | dirty | usagecount | pinning 
+----------+------+-----------+-------+--------+-------+------------+---------
+        0 | main |      1262 |     0 |   1664 | f     |          5 |       0
 ```
 ### pg_read_page_into_buffer(relname text, fork text, blocknumber integer)
 Read a specific page of a specific relation into the buffer cache. Returns the number of the filled buffer.
@@ -154,10 +121,10 @@ Read a specific page of a specific relation into the buffer cache. Returns the n
 SELECT pg_read_page_into_buffer('test', 'main', 0);
  pg_read_page_into_buffer 
 --------------------------
-                     5074
+5074
 ```
 ## Test suite 
-To run the test suite, execute
+To run the test suite, execute:
 ```sh
 make installcheck    
 ```

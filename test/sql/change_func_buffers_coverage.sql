@@ -1,7 +1,6 @@
 --
 -- Preparing
 --
-
 SET allow_in_place_tablespaces = true;
 CREATE TABLESPACE test_tablespace LOCATION '';
 RESET allow_in_place_tablespaces;
@@ -19,9 +18,9 @@ INSERT INTO test_table_1
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_1 AS 
-    SELECT blocknumber, dirty, pinning, fork 
+    SELECT blocknum, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_1') 
-        ORDER BY fork, blocknumber; 
+        ORDER BY fork, blocknum; 
 
 CREATE TABLE test_table_2(col integer) 
     WITH (autovacuum_enabled = off)
@@ -30,9 +29,9 @@ INSERT INTO test_table_2
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_2 AS 
-    SELECT blocknumber, dirty, pinning, fork 
+    SELECT blocknum, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_2') 
-        ORDER BY fork, blocknumber; 
+        ORDER BY fork, blocknum; 
 
 \c test_database_2 \\
 CREATE EXTENSION buffercache_tools;
@@ -44,9 +43,9 @@ INSERT INTO test_table_3
     SELECT 1 FROM generate_series(1,1000); 
 
 CREATE VIEW tt_3 AS 
-    SELECT blocknumber, dirty, pinning, fork 
+    SELECT blocknum, dirty, pinning, fork 
         FROM pg_show_relation_buffers('test_table_3') 
-        ORDER BY fork, blocknumber; 
+        ORDER BY fork, blocknum; 
 VACUUM;
 CHECKPOINT;
 
@@ -55,49 +54,53 @@ CHECKPOINT;
 VACUUM;
 CHECKPOINT;
 
+--
+-- Tests
+--
+
 -- 
--- Check pg_mark_buffer_dirty() and pg_flush_buffer()
+-- Check pg_change_buffer() buffers coverage
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_buffer_dirty(
+SELECT pg_change_buffer('mark_dirty',
     ( 
-        SELECT buffernumber 
+        SELECT buffernum 
             FROM pg_show_relation_buffers('test_table_1') 
-            ORDER BY fork, blocknumber
+            ORDER BY fork, blocknum
             LIMIT 1
     )::integer
 );
 SELECT * FROM tt_1;
-SELECT pg_flush_buffer(
+SELECT pg_change_buffer('flush',
     ( 
-        SELECT buffernumber 
+        SELECT buffernum 
             FROM pg_show_relation_buffers('test_table_1') 
-            ORDER BY fork, blocknumber 
+            ORDER BY fork, blocknum 
             LIMIT 1
     )::integer
 );
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_relation_fork_buffers_dirty() and pg_flush_relation_fork_buffers()
+-- Check pg_change_relation_fork_buffers() buffers coverage
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_relation_fork_buffers_dirty('test_table_1', 'main');
+SELECT pg_change_relation_fork_buffers('mark_dirty', 'test_table_1', 'main');
 SELECT * FROM tt_1;
-SELECT pg_flush_relation_fork_buffers('test_table_1', 'main');
+SELECT pg_change_relation_fork_buffers('flush', 'test_table_1', 'main');
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_relation_buffers_dirty() and pg_flush_relation_buffers()
+-- Check pg_change_relation_buffers() buffers coverage
 --
 SELECT * FROM tt_1;
-SELECT pg_mark_relation_buffers_dirty('test_table_1');
+SELECT pg_change_relation_buffers('mark_dirty', 'test_table_1');
 SELECT * FROM tt_1;
-SELECT pg_flush_relation_buffers('test_table_1');
+SELECT pg_change_relation_buffers('flush', 'test_table_1');
 SELECT * FROM tt_1;
 
 -- 
--- Check pg_mark_database_buffers_dirty() and pg_flush_database_buffers()
+-- Check pg_change_database_buffers() buffers coverage 
 --
 SELECT * FROM tt_1;
 SELECT * FROM tt_2;
@@ -105,7 +108,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_mark_database_buffers_dirty(
+SELECT pg_change_database_buffers('mark_dirty',
     (
         SELECT oid 
             FROM pg_database 
@@ -119,7 +122,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_flush_database_buffers(
+SELECT pg_change_database_buffers('flush',
     (
         SELECT oid 
             FROM pg_database 
@@ -134,7 +137,7 @@ SELECT * FROM tt_3;
 \c test_database_1 \\
 
 -- 
--- Check pg_mark_tablespace_buffers_dirty() and pg_flush_tablespace_buffers()
+-- Check pg_change_tablespace_buffers() buffers coverage 
 --
 SELECT * FROM tt_1;
 SELECT * FROM tt_2;
@@ -142,7 +145,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_mark_tablespace_buffers_dirty(
+SELECT pg_change_tablespace_buffers('mark_dirty',
     (
         SELECT oid 
             FROM pg_tablespace 
@@ -156,7 +159,7 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
-SELECT pg_flush_tablespace_buffers(
+SELECT pg_change_tablespace_buffers('flush',
     (
         SELECT oid 
             FROM pg_tablespace 
@@ -170,17 +173,8 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
--- 
--- Check pg_read_page_into_buffer()
 --
-SELECT (
-    (SELECT pg_read_page_into_buffer('test_table_1', 'main', 0)) = 
-    (SELECT buffernumber FROM pg_show_relation_buffers('test_table_1') 
-        WHERE blocknumber = 0 AND fork = 'main')
-);
-
---
--- Ending
+-- Cleanup 
 --
 DROP TABLE test_table_1;
 DROP TABLE test_table_2;
