@@ -112,7 +112,11 @@ const char *const bufProcFuncNames[] = {
  */
 static void ChangeSpcOidBuffer(Buffer buffer, Oid spcOid);
 static void ChangeDBOidBuffer(Buffer buffer,  Oid dbOid);
+#ifdef HAVE_RELFILENUMBERMAP_H
+static void ChangeRelNumberBuffer(Buffer buffer, Oid relNumber);
+#else
 static void ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber);
+#endif  /* HAVE_RELFILENUMBERMAP_H */
 static void ChangeForkNumBuffer(Buffer buffer, ForkNumber forkNum);
 static void ChangeBlockNumBuffer(Buffer buffer, BlockNumber blockNum);
 
@@ -304,7 +308,7 @@ BufProcFuncWrapper(BufProcFunc buf_proc_func, Buffer buffer, NullableDatum *bpf_
 			ChangeDBOidBuffer(buffer, dbOid);
 			break;
 		case BCT_CHANGE_RELNUMBER:
-			Oid relNumber = (RelFileNumber) DatumGetObjectId(bpf_args[0].value);
+			Oid relNumber = (Oid) DatumGetObjectId(bpf_args[0].value);
 
 			ChangeRelNumberBuffer(buffer, relNumber);
 			break;
@@ -380,11 +384,22 @@ ChangeDBOidBuffer(Buffer buffer, Oid dbOid)
 	UnlockBufHdr(bufHdr, bufState);
 }
 
+#ifdef HAVE_RELFILENUMBERMAP_H
+static void ChangeRelNumberBuffer(Buffer buffer, Oid relNumber);
+#else
+static void ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber);
+#endif  /* HAVE_RELFILENUMBERMAP_H */
+
 /*
  * Change relNumber of buffer 
  */
+#ifdef HAVE_RELFILENUMBERMAP_H
+static void
+ChangeRelNumberBuffer(Buffer buffer, Oid relNumber)
+#else
 static void
 ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber)
+#endif  /* HAVE_RELFILENUMBERMAP_H */
 {
 	BufferDesc 	*bufHdr;
 	uint32 		bufState;
