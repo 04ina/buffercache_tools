@@ -17,6 +17,10 @@ CREATE TABLE test_table(col integer)
 INSERT INTO test_table 
     SELECT 1 FROM generate_series(1,1000); 
 
+ALTER FUNCTION pg_show_relation_buffers(text) SET search_path = public;
+ALTER FUNCTION pg_show_buffer(integer) SET search_path = public;
+
+
 -- test buffer number
 CREATE MATERIALIZED VIEW test_buf_num  AS (
     SELECT buffernum::integer
