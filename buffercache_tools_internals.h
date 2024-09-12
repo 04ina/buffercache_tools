@@ -56,6 +56,8 @@ extern void database_buffers_handler(int32 buf_proc_func, Oid dbOid, NullableDat
 
 extern void tablespace_buffers_handler(int32 buf_proc_func, Oid spcOid, NullableDatum *bpf_args);
 
+extern void all_valid_buffers_handler(BufProcFunc buf_proc_func, NullableDatum *bpf_args);
+
 /*
  * Check functions
  */
