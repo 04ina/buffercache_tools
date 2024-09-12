@@ -29,10 +29,11 @@ typedef enum BufProcFunc {
 	BCT_CHANGE_DBOID,
 	BCT_CHANGE_RELNUMBER,
 	BCT_CHANGE_FORKNUM,
-	BCT_CHANGE_BLOCKNUM
+	BCT_CHANGE_BLOCKNUM,
+	BCT_INVALIDATE
 } BufProcFunc;
 
-#define MAX_BPF_NUM	BCT_CHANGE_BLOCKNUM
+#define MAX_BPF_NUM	BCT_INVALIDATE
 
 /*-------------------------------------------------------------------------
  * 								function Headers 

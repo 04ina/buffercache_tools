@@ -105,20 +105,22 @@ const char *const bufProcFuncNames[] = {
 	[BCT_CHANGE_RELNUMBER] = "change_relnumber",
 	[BCT_CHANGE_FORKNUM] = "change_forknum",
 	[BCT_CHANGE_BLOCKNUM] = "change_blocknum",
+	[BCT_INVALIDATE] = "invalidate",
 };
 
 /*
  * change buffer tag functions headers 
  */
-static void ChangeSpcOidBuffer(Buffer buffer, Oid spcOid);
-static void ChangeDBOidBuffer(Buffer buffer,  Oid dbOid);
+static void change_spcoid_buffer(Buffer buffer, Oid spcOid);
+static void change_dboid_buffer(Buffer buffer,  Oid dbOid);
 #ifdef HAVE_RELFILENUMBERMAP_H
-static void ChangeRelNumberBuffer(Buffer buffer, Oid relNumber);
+static void change_relnumber_buffer(Buffer buffer, Oid relNumber);
 #else
-static void ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber);
+static void change_relnumber_buffer(Buffer buffer, RelFileNumber relNumber);
 #endif  /* HAVE_RELFILENUMBERMAP_H */
-static void ChangeForkNumBuffer(Buffer buffer, ForkNumber forkNum);
-static void ChangeBlockNumBuffer(Buffer buffer, BlockNumber blockNum);
+static void change_forknum_buffer(Buffer buffer, ForkNumber forkNum);
+static void change_blocknum_buffer(Buffer buffer, BlockNumber blockNum);
+static void invalidate_buffer(Buffer buffer);
 
 /* 
  * other functions headers 
@@ -193,6 +195,7 @@ bpf_func_nargs_check(BufProcFunc buf_proc_func, short nargs)
 		/* one arg*/
 		case BCT_MARK_DIRTY:
 		case BCT_FLUSH:
+		case BCT_INVALIDATE:
 			if (nargs != 0)
 				invalid_nargs = true;	
 			break;
@@ -300,24 +303,24 @@ BufProcFuncWrapper(BufProcFunc buf_proc_func, Buffer buffer, NullableDatum *bpf_
 		case BCT_CHANGE_SPCOID:
 			Oid spcOid = DatumGetObjectId(bpf_args[0].value);
 
-			ChangeSpcOidBuffer(buffer, spcOid);
+			change_spcoid_buffer(buffer, spcOid);
 			break;
 		case BCT_CHANGE_DBOID:
 			Oid dbOid = DatumGetObjectId(bpf_args[0].value);
 
-			ChangeDBOidBuffer(buffer, dbOid);
+			change_dboid_buffer(buffer, dbOid);
 			break;
 		case BCT_CHANGE_RELNUMBER:
 			Oid relNumber = (Oid) DatumGetObjectId(bpf_args[0].value);
 
-			ChangeRelNumberBuffer(buffer, relNumber);
+			change_relnumber_buffer(buffer, relNumber);		
 			break;
 		case BCT_CHANGE_FORKNUM:
     		ForkNumber  forkNum = (ForkNumber) bpf_args[0].value;
 
 			fork_num_correct_check(forkNum);
 
-			ChangeForkNumBuffer(buffer, forkNum);
+			change_forknum_buffer(buffer, forkNum);
 			break;
 		case BCT_CHANGE_BLOCKNUM:
 			BlockNumber blockNum;
@@ -325,7 +328,10 @@ BufProcFuncWrapper(BufProcFunc buf_proc_func, Buffer buffer, NullableDatum *bpf_
 			int64_to_block_number_convert_check(DatumGetInt64(bpf_args[0].value));
 			blockNum = DatumGetUInt32(bpf_args[0].value);
 
-			ChangeBlockNumBuffer(buffer, blockNum);
+			change_blocknum_buffer(buffer, blockNum);
+			break;
+		case BCT_INVALIDATE:
+			invalidate_buffer(buffer);
 			break;
 		default:
 			Assert(false);
@@ -336,7 +342,7 @@ BufProcFuncWrapper(BufProcFunc buf_proc_func, Buffer buffer, NullableDatum *bpf_
  * Change spcOid of buffer 
  */
 static void
-ChangeSpcOidBuffer(Buffer buffer, Oid spcOid)
+change_spcoid_buffer(Buffer buffer, Oid spcOid)
 {
 	BufferDesc 	*bufHdr;
 	uint32 		bufState;
@@ -362,7 +368,7 @@ ChangeSpcOidBuffer(Buffer buffer, Oid spcOid)
  * Change dbOid of buffer 
  */
 static void
-ChangeDBOidBuffer(Buffer buffer, Oid dbOid)
+change_dboid_buffer(Buffer buffer, Oid dbOid)
 {
 	BufferDesc 	*bufHdr;
 	uint32 		bufState;
@@ -384,21 +390,15 @@ ChangeDBOidBuffer(Buffer buffer, Oid dbOid)
 	UnlockBufHdr(bufHdr, bufState);
 }
 
-#ifdef HAVE_RELFILENUMBERMAP_H
-static void ChangeRelNumberBuffer(Buffer buffer, Oid relNumber);
-#else
-static void ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber);
-#endif  /* HAVE_RELFILENUMBERMAP_H */
-
 /*
  * Change relNumber of buffer 
  */
 #ifdef HAVE_RELFILENUMBERMAP_H
 static void
-ChangeRelNumberBuffer(Buffer buffer, Oid relNumber)
+change_relnumber_buffer(Buffer buffer, Oid relNumber)
 #else
 static void
-ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber)
+change_relnumber_buffer(Buffer buffer, RelFileNumber relNumber)
 #endif  /* HAVE_RELFILENUMBERMAP_H */
 {
 	BufferDesc 	*bufHdr;
@@ -425,7 +425,7 @@ ChangeRelNumberBuffer(Buffer buffer, RelFileNumber relNumber)
  * Change forkNum of buffer 
  */
 static void
-ChangeForkNumBuffer(Buffer buffer, ForkNumber forkNum)
+change_forknum_buffer(Buffer buffer, ForkNumber forkNum)
 {
 	BufferDesc 	*bufHdr;
 	uint32 		bufState;
@@ -447,7 +447,7 @@ ChangeForkNumBuffer(Buffer buffer, ForkNumber forkNum)
  * Change blockNum of buffer 
  */
 static void
-ChangeBlockNumBuffer(Buffer buffer, BlockNumber blockNum)
+change_blocknum_buffer(Buffer buffer, BlockNumber blockNum)
 {
 	BufferDesc 	*bufHdr;
 	uint32 		bufState;
@@ -463,6 +463,75 @@ ChangeBlockNumBuffer(Buffer buffer, BlockNumber blockNum)
 	END_CRIT_SECTION();
 	
 	UnlockBufHdr(bufHdr, bufState);
+}
+
+/*
+ * Invalidate buffer
+ */
+static void
+invalidate_buffer(Buffer buffer)
+{
+	BufferDesc *bufHdr = GetBufferDescriptor(buffer - 1);
+	BufferTag	oldTag;
+	uint32		oldHash;		/* hash value for oldTag */
+	LWLock	   *oldPartitionLock;	/* buffer partition lock for it */
+	uint32		oldFlags;
+	uint32		buf_state;
+
+	LockBufHdr(bufHdr);
+
+	/* Save the original buffer tag before dropping the spinlock */
+	oldTag = bufHdr->tag;
+
+	buf_state = pg_atomic_read_u32(&bufHdr->state);
+	Assert(buf_state & BM_LOCKED);
+	UnlockBufHdr(bufHdr, buf_state);
+
+	/*
+	 * Need to compute the old tag's hashcode and partition lock ID. XXX is it
+	 * worth storing the hashcode in BufferDesc so we need not recompute it
+	 * here?  Probably not.
+	 */
+	oldHash = BufTableHashCode(&oldTag);
+	oldPartitionLock = BufMappingPartitionLock(oldHash);
+
+	/*
+	 * Acquire exclusive mapping lock in preparation for changing the buffer's
+	 * association.
+	 */
+	LWLockAcquire(oldPartitionLock, LW_EXCLUSIVE);
+
+	/* Re-lock the buffer header */
+	buf_state = LockBufHdr(bufHdr);
+
+	/*
+	 * Clear out the buffer's tag and flags.  We must do this to ensure that
+	 * linear scans of the buffer array don't think the buffer is valid.
+	 */
+	oldFlags = buf_state & BUF_FLAG_MASK;
+#ifdef HAVE_RELFILENUMBERMAP_H
+	CLEAR_BUFFERTAG(bufHdr->tag);
+#else
+	ClearBufferTag(&bufHdr->tag);
+#endif  /* HAVE_RELFILENUMBERMAP_H */
+	buf_state &= ~(BUF_FLAG_MASK | BUF_USAGECOUNT_MASK);
+	UnlockBufHdr(bufHdr, buf_state);
+
+	/*
+	 * Remove the buffer from the lookup hashtable, if it was in there.
+	 */
+	if (oldFlags & BM_TAG_VALID)
+		BufTableDelete(&oldTag, oldHash);
+
+	/*
+	 * Done with mapping lock.
+	 */
+	LWLockRelease(oldPartitionLock);
+
+	/*
+	 * Insert the buffer at the head of the list of free buffers.
+	 */
+	StrategyFreeBuffer(bufHdr);
 }
 
 /*-------------------------------------------------------------------------

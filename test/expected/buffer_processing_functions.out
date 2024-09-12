@@ -199,6 +199,22 @@ SELECT pg_change_buffer(
  t
 (1 row)
 
+-- Check 'invalidate' buffer processing function for pg_change_buffer()
+SELECT pg_change_buffer(
+    'invalidate', 
+    (TABLE test_buf_num)
+);
+ pg_change_buffer 
+------------------
+ t
+(1 row)
+
+SELECT * FROM pg_show_buffer((TABLE test_buf_num));
+ blocknum | fork | relnumber | dboid | spcoid | dirty | usagecount | pinning 
+----------+------+-----------+-------+--------+-------+------------+---------
+          |      |           |       |        |       |            |        
+(1 row)
+
 --
 -- Cleanup 
 --

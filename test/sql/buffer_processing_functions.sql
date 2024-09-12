@@ -129,6 +129,14 @@ SELECT pg_change_buffer(
     (SELECT blocknum FROM test_buf_src_dat)::Oid
 ); 
 
+-- Check 'invalidate' buffer processing function for pg_change_buffer()
+SELECT pg_change_buffer(
+    'invalidate', 
+    (TABLE test_buf_num)
+);
+
+SELECT * FROM pg_show_buffer((TABLE test_buf_num));
+
 --
 -- Cleanup 
 --
