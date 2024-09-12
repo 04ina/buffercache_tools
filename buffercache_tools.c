@@ -17,6 +17,7 @@ PG_FUNCTION_INFO_V1(pg_change_relation_fork_buffers);
 PG_FUNCTION_INFO_V1(pg_change_relation_buffers);
 PG_FUNCTION_INFO_V1(pg_change_database_buffers);
 PG_FUNCTION_INFO_V1(pg_change_tablespace_buffers);
+PG_FUNCTION_INFO_V1(pg_change_all_valid_buffers);
 
 PG_FUNCTION_INFO_V1(pg_show_buffer);
 PG_FUNCTION_INFO_V1(pg_show_relation_buffers);
@@ -31,6 +32,7 @@ PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
 #define PG_CHANGE_RELATION_BUFFERS_NUM_MAIN_ARGS		2
 #define PG_CHANGE_DATABASE_BUFFERS_NUM_MAIN_ARGS		2
 #define PG_CHANGE_TABLESPACE_BUFFERS_NUM_MAIN_ARGS		2	
+#define PG_CHANGE_ALL_VALID_BUFFERS_NUM_MAIN_ARGS		1	
 
 /*-------------------------------------------------------------------------
  * 								extension functions	 
@@ -181,6 +183,24 @@ pg_change_tablespace_buffers(PG_FUNCTION_ARGS)
 	bpf_func_nargs_check(buf_proc_func, bpf_nargs);
 
 	tablespace_buffers_handler(buf_proc_func, spcOid, bpf_args);
+
+	PG_RETURN_BOOL(true);
+}
+
+Datum
+pg_change_all_valid_buffers(PG_FUNCTION_ARGS)
+{
+	char *buf_proc_func_name = text_to_cstring(PG_GETARG_TEXT_PP(0)); 
+
+	NullableDatum 	*bpf_args = fcinfo->args + PG_CHANGE_ALL_VALID_BUFFERS_NUM_MAIN_ARGS;
+	BufProcFunc 	buf_proc_func = buf_proc_func_name_to_number(buf_proc_func_name);
+	short 			bpf_nargs = PG_NARGS() - PG_CHANGE_ALL_VALID_BUFFERS_NUM_MAIN_ARGS;
+	
+	superuser_check();
+
+	bpf_func_nargs_check(buf_proc_func, bpf_nargs);
+
+	all_valid_buffers_handler(buf_proc_func, bpf_args);
 
 	PG_RETURN_BOOL(true);
 }

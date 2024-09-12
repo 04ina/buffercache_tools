@@ -257,3 +257,41 @@ AS $$
         END
     );
 $$ LANGUAGE SQL;
+
+--
+-- pg_change_all_valid_buffers()
+--
+CREATE FUNCTION pg_change_all_valid_buffers(
+    IN buf_proc_func text)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_all_valid_buffers'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_all_valid_buffers(
+    IN buf_proc_func text,
+    IN int_value Oid)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_all_valid_buffers'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_all_valid_buffers(
+    IN buf_proc_func text,
+    IN int_value bigint)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_all_valid_buffers'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_all_valid_buffers(
+    IN buf_proc_func text,
+    IN text_value text)
+RETURNS bool 
+AS $$
+    SELECT pg_change_all_valid_buffers($1,
+        CASE $2 
+            WHEN 'main' THEN 0
+            WHEN 'fsm' THEN 1 
+            WHEN 'vm' THEN 2 
+            WHEN 'init' THEN 3 
+        END
+    );
+$$ LANGUAGE SQL;

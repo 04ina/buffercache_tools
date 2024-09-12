@@ -173,6 +173,31 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
+-- 
+-- Check pg_change_all_valid_buffers() buffers coverage 
+--
+SELECT * FROM tt_1;
+SELECT * FROM tt_2;
+\c test_database_2 \\
+SELECT * FROM tt_3;
+\c test_database_1 \\
+
+SELECT pg_change_all_valid_buffers('mark_dirty');
+
+SELECT * FROM tt_1;
+SELECT * FROM tt_2;
+\c test_database_2 \\
+SELECT * FROM tt_3;
+\c test_database_1 \\
+
+SELECT pg_change_all_valid_buffers('flush');
+
+SELECT * FROM tt_1;
+SELECT * FROM tt_2;
+\c test_database_2 \\
+SELECT * FROM tt_3;
+\c test_database_1 \\
+
 --
 -- Cleanup 
 --

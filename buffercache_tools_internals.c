@@ -638,6 +638,36 @@ tablespace_buffers_handler(BufProcFunc buf_proc_func,
 	}
 }
 
+/*
+ * All valid buffers handler
+ */
+void
+all_valid_buffers_handler(BufProcFunc buf_proc_func, NullableDatum *bpf_args)
+{
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+
+		if (BUFFER_IS_VALID(bufState))
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufProcFuncWrapper(buf_proc_func, (Buffer) i, bpf_args);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+		}
+		else
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+}
+
 void
 pg_show_buffer_internals(FunctionCallInfo fcinfo, Buffer buffer)
 {
