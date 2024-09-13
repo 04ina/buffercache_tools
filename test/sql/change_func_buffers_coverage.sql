@@ -198,6 +198,15 @@ SELECT * FROM tt_2;
 SELECT * FROM tt_3;
 \c test_database_1 \\
 
+-- 
+-- Check pg_change_buffer_by_page() buffers coverage
+--
+SELECT * FROM tt_1;
+SELECT pg_change_buffer_by_page('mark_dirty', 'test_table_1', 'main', '0');
+SELECT * FROM tt_1;
+SELECT pg_change_buffer_by_page('flush', 'test_table_1', 'main', '0');
+SELECT * FROM tt_1;
+
 --
 -- Cleanup 
 --

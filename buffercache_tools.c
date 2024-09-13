@@ -18,6 +18,7 @@ PG_FUNCTION_INFO_V1(pg_change_relation_buffers);
 PG_FUNCTION_INFO_V1(pg_change_database_buffers);
 PG_FUNCTION_INFO_V1(pg_change_tablespace_buffers);
 PG_FUNCTION_INFO_V1(pg_change_all_valid_buffers);
+PG_FUNCTION_INFO_V1(pg_change_buffer_by_page);
 
 PG_FUNCTION_INFO_V1(pg_show_buffer);
 PG_FUNCTION_INFO_V1(pg_show_relation_buffers);
@@ -33,6 +34,7 @@ PG_FUNCTION_INFO_V1(pg_read_page_into_buffer);
 #define PG_CHANGE_DATABASE_BUFFERS_NUM_MAIN_ARGS		2
 #define PG_CHANGE_TABLESPACE_BUFFERS_NUM_MAIN_ARGS		2	
 #define PG_CHANGE_ALL_VALID_BUFFERS_NUM_MAIN_ARGS		1	
+#define PG_CHANGE_BUFFER_BY_PAGE_MAIN_ARGS  			4	
 
 /*-------------------------------------------------------------------------
  * 								extension functions	 
@@ -201,6 +203,33 @@ pg_change_all_valid_buffers(PG_FUNCTION_ARGS)
 	bpf_func_nargs_check(buf_proc_func, bpf_nargs);
 
 	all_valid_buffers_handler(buf_proc_func, bpf_args);
+
+	PG_RETURN_BOOL(true);
+}
+
+Datum
+pg_change_buffer_by_page(PG_FUNCTION_ARGS)
+{
+	char 	*buf_proc_func_name = text_to_cstring(PG_GETARG_TEXT_PP(0)); 
+
+	text 		*relName = PG_GETARG_TEXT_PP(1);
+	text 		*forkName = PG_GETARG_TEXT_PP(2);
+	int64		blockNum_int64 = (Buffer) PG_GETARG_INT64(3);
+
+	BlockNumber	blockNum;
+
+	NullableDatum 	*bpf_args = fcinfo->args + PG_CHANGE_BUFFER_BY_PAGE_MAIN_ARGS;
+	BufProcFunc 	buf_proc_func = buf_proc_func_name_to_number(buf_proc_func_name);
+	short 			bpf_nargs = PG_NARGS() - PG_CHANGE_BUFFER_BY_PAGE_MAIN_ARGS;
+
+	int64_to_block_number_convert_check(blockNum_int64);
+	blockNum = (BlockNumber) blockNum_int64;
+
+	superuser_check();
+
+	bpf_func_nargs_check(buf_proc_func, bpf_nargs);
+
+	change_buffer_by_page_handler(buf_proc_func, relName, forkName, blockNum, bpf_args);
 
 	PG_RETURN_BOOL(true);
 }

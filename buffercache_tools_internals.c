@@ -89,6 +89,12 @@
 #endif
 
 /*
+ * does the buffer page belongs to the block?
+ */
+#define BCT_IS_BUFFER_BELONGS_BLOCK(_bct_bufHdr_, _bct_blockNum_) \
+	_bct_bufHdr_->tag.blockNum == _bct_blockNum_
+
+/*
  * is buffer valid?
  */
 #define BUFFER_IS_VALID(_buf_state_) \
@@ -735,6 +741,67 @@ all_valid_buffers_handler(BufProcFunc buf_proc_func, NullableDatum *bpf_args)
 			UnlockBufHdr(bufHdr, bufState);
 		}
 	}
+}
+
+/*
+ * 
+ */
+void
+change_buffer_by_page_handler(BufProcFunc buf_proc_func, 
+									   text *relName, text *forkName, 
+									   BlockNumber blockNum, NullableDatum *bpf_args)
+{
+	Buffer 		i;
+	BufferDesc 	*bufHdr;
+	uint32 		bufState;
+	bool 		buffer_found = false;
+
+	Relation 	rel;
+	RangeVar 	*relrv;
+	ForkNumber 	forkNum; 
+
+	/* Open relation */
+	relrv = makeRangeVarFromNameList(textToQualifiedNameList(relName));	
+	rel = relation_openrv(relrv, AccessExclusiveLock);
+
+	other_temp_check(rel);
+
+	forkNum = forkname_to_number(text_to_cstring(forkName));	
+
+	block_num_not_exist_in_relation_check(rel, forkNum, blockNum);
+
+	/* Iterate over all non-local buffers */
+	for (i = 1; i <= NBuffers; i++)
+	{
+		bufHdr = GetBufferDescriptor(i - 1);
+		bufState = LockBufHdr(bufHdr);
+		
+		if (BCT_IS_BUFFER_BELONGS_RELATION(bufHdr, rel) && 
+			BCT_IS_BUFFER_BELONGS_FORK(bufHdr, forkNum) &&
+			BCT_IS_BUFFER_BELONGS_BLOCK(bufHdr, blockNum))
+		{
+			LockBuffer(i, BUFFER_LOCK_EXCLUSIVE);
+			UnlockBufHdr(bufHdr, bufState);
+			BufProcFuncWrapper(buf_proc_func, (Buffer) i, bpf_args);
+			LockBuffer(i, BUFFER_LOCK_UNLOCK);			
+
+			buffer_found = true;
+			break;
+		}
+		else
+		{
+			UnlockBufHdr(bufHdr, bufState);
+		}
+	}
+
+	if (!buffer_found)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("the block with blockNum %u is not in buffercache",
+						blockNum)));
+
+	/* Close relation */
+	relation_close(rel, AccessExclusiveLock);
 }
 
 void

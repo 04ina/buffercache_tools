@@ -295,3 +295,53 @@ AS $$
         END
     );
 $$ LANGUAGE SQL;
+
+--
+-- pg_change_buffer_by_page()
+--
+CREATE FUNCTION pg_change_buffer_by_page(
+    IN buf_proc_func text,
+    IN relname text, 
+    IN fork text,
+    IN blocknum bigint)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_buffer_by_page'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_buffer_by_page(
+    IN buf_proc_func text,
+    IN relname text, 
+    IN fork text,
+    IN blocknum bigint,
+    IN int_value Oid)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_buffer_by_page'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_buffer_by_page(
+    IN buf_proc_func text,
+    IN relname text, 
+    IN fork text,
+    IN blocknum bigint,
+    IN int_value bigint)
+RETURNS bool 
+AS 'MODULE_PATHNAME', 'pg_change_buffer_by_page'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION pg_change_buffer_by_page(
+    IN buf_proc_func text,
+    IN relname text, 
+    IN fork text,
+    IN blocknum bigint,
+    IN text_value text)
+RETURNS bool 
+AS $$
+    SELECT pg_change_buffer_by_page($1, $2, $3, $4,
+        CASE $5 
+            WHEN 'main' THEN 0
+            WHEN 'fsm' THEN 1 
+            WHEN 'vm' THEN 2 
+            WHEN 'init' THEN 3 
+        END
+    );
+$$ LANGUAGE SQL;

@@ -59,6 +59,10 @@ extern void tablespace_buffers_handler(int32 buf_proc_func, Oid spcOid, Nullable
 
 extern void all_valid_buffers_handler(BufProcFunc buf_proc_func, NullableDatum *bpf_args);
 
+extern void change_buffer_by_page_handler(BufProcFunc buf_proc_func, 
+												   text *relName, text *forkName, 
+												   BlockNumber blockNum, NullableDatum *bpf_args);
+
 /*
  * Check functions
  */

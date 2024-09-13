@@ -695,6 +695,63 @@ SELECT * FROM tt_3;
 (9 rows)
 
 \c test_database_1 \\
+-- 
+-- Check pg_change_buffer_by_page() buffers coverage
+--
+SELECT * FROM tt_1;
+ blocknum | dirty | pinning | fork 
+----------+-------+---------+------
+        0 | f     |       0 | fsm
+        1 | f     |       0 | fsm
+        2 | f     |       0 | fsm
+        0 | f     |       0 | main
+        1 | f     |       0 | main
+        2 | f     |       0 | main
+        3 | f     |       0 | main
+        4 | f     |       0 | main
+        0 | f     |       0 | vm
+(9 rows)
+
+SELECT pg_change_buffer_by_page('mark_dirty', 'test_table_1', 'main', '0');
+ pg_change_buffer_by_page 
+--------------------------
+ t
+(1 row)
+
+SELECT * FROM tt_1;
+ blocknum | dirty | pinning | fork 
+----------+-------+---------+------
+        0 | f     |       0 | fsm
+        1 | f     |       0 | fsm
+        2 | f     |       0 | fsm
+        0 | t     |       0 | main
+        1 | f     |       0 | main
+        2 | f     |       0 | main
+        3 | f     |       0 | main
+        4 | f     |       0 | main
+        0 | f     |       0 | vm
+(9 rows)
+
+SELECT pg_change_buffer_by_page('flush', 'test_table_1', 'main', '0');
+ pg_change_buffer_by_page 
+--------------------------
+ t
+(1 row)
+
+SELECT * FROM tt_1;
+ blocknum | dirty | pinning | fork 
+----------+-------+---------+------
+        0 | f     |       0 | fsm
+        1 | f     |       0 | fsm
+        2 | f     |       0 | fsm
+        0 | f     |       0 | main
+        1 | f     |       0 | main
+        2 | f     |       0 | main
+        3 | f     |       0 | main
+        4 | f     |       0 | main
+        0 | f     |       0 | vm
+(9 rows)
+
 --
 -- Cleanup 
 --
